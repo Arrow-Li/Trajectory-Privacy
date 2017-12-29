@@ -1,8 +1,3 @@
-#include <iostream>
-#include <vector>
-#include <set>
-#include <string>
-#include <algorithm>
 #include "Matrix.h"
 #include "Trajectory.h"
 using namespace std;
@@ -40,16 +35,16 @@ public:
     friend Graph TDM_Cons(vector<Trajectory>&, double, double, double, double);
 };
 
-Graph::Graph(int size): WE(size, size) {
+Graph::Graph(int size): WE(size) {
 
 }
 
-Graph::Graph(vector<Trajectory> &t): WE(t.size(), t.size()) {
+Graph::Graph(vector<Trajectory> &t): WE(t.size()) {
     V = t;
 }
 
 void Graph::show() {
-    WE.show();
+    WE.print();
 }
 
 int Graph::countV() {
@@ -61,11 +56,11 @@ void Graph::insertV(Trajectory t) {
 }
 
 void Graph::insertE(int i, int j, double w) {
-    WE.set(i, j, w);
+    WE.set_value(i, j, w);
 }
 
 double Graph::weight(int i, int j) {
-    return WE.weight(i, j);
+    return WE.get_value(i, j);
 }
 
 int Graph::find(string id) {
@@ -97,7 +92,7 @@ vector<string> Graph::linkV(string a) {
     for (int i = 0; i < V.size(); ++i) {
         if (i == x)
             continue;
-        if (WE.weight(x, i) != INF)
+        if (WE.get_value(x, i) != INF)
             v.push_back(this->refind(i));
     }
     return v;
@@ -115,8 +110,8 @@ double Graph::minE(Trajectory& v1, Trajectory& v2) {
     int x = 0, y = 0;
     for (int i = 0; i < V.size(); ++i) {
         for (int j = i + 1; j < V.size(); ++j) {
-            if (WE.weight(i, j) < min && WE.weight(i, j) > 0) {
-                min = WE.weight(i, j);
+            if (WE.get_value(i, j) < min && WE.get_value(i, j) > 0) {
+                min = WE.get_value(i, j);
                 x = i; y = j;
             }
         }
@@ -134,7 +129,7 @@ Graph Graph::create_child(vector<int> id) {
     Graph G(T);
     for (int i = 0; i < id.size(); ++i) {
         for (int j = 0; j < id.size(); ++j) {
-            G.WE.set(i, j, WE.weight(id[i], id[j]));
+            G.WE.set_value(i, j, WE.get_value(id[i], id[j]));
         }
     }
     return G;

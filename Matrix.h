@@ -1,106 +1,113 @@
 #include <iostream>
-#include <iomanip>
-#include <memory.h>
-#include <math.h>
-
 #define INF 0x3f3f3f3f
 
-using namespace std;
+class Matrix {
+    int n, length;
+    double *mat;
 
-class Matrix
-{
-private:
-    int row, column;
-    double **mat;
 public:
-    Matrix(int, int);
+    Matrix(int);
     Matrix(const Matrix &);
-    void set(int, int, double);
-    double weight(int, int);
-    void show();
-    void plus(int, Matrix&);
+    void set_value(int, int, double);
+    double get_value(int, int);
+    void merge(int, int, Matrix &);
     void del(int);
-    //void Del(int);
+    void print();
 };
 
-Matrix::Matrix(int m, int n) {
-    row = m;
-    column = n;
-    mat = new double*[row];
-    for (int i = 0; i < row; ++i) {
-        mat[i] = new double[column];
-        for (int j = 0; j < column; ++j) {
-            mat[i][j] = INF;
-            mat[i][i] = 0;
-        }
+Matrix::Matrix(int n) {
+    this->n = n;
+    length = (n + 1) * n / 2;
+    mat = new double[length];
+    for (int i = 0; i < length; i++)
+        mat[i] = INF;
+}
+
+Matrix::Matrix(const Matrix &m) {
+    this->n = m.n;
+    this->length = m.length;
+    this->mat = new double[this->n];
+    for (int i = 0; i < n; i++)
+        this->mat[i] = m.mat[i];
+}
+
+void Matrix::set_value(int row, int col, double w) {
+    if ((row >= n || col >= n) || (row < 0 || col < 0)) {
+        std::cout << "Error!" << std::endl;
+        return;
     }
+    if (row >= col)
+        mat[row * (row + 1) / 2 + col] = w;
+    else
+        mat[col * (col + 1) / 2 + row] = w;
 }
 
-Matrix::Matrix(const Matrix &M) {
-    row = M.row;
-    column = M.column;
-    mat = new double*[row];
-    for (int i = 0; i < row; ++i) {
-        mat[i] = new double[column];
-        memcpy(mat[i], M.mat[i], sizeof(M.mat[i])*column);
+double Matrix::get_value(int row, int col) {
+    if (row < col) {
+        int temp = row;
+        row = col;
+        col = temp;
     }
+    return mat[row * (row + 1) / 2 + col];
 }
 
-void Matrix::set(int i, int j, double x) {
-    mat[i][j] = x;
-    mat[j][i] = x;
-}
-
-double Matrix::weight(int i, int j) {
-    return mat[i][j];
-}
-
-void Matrix::show() {
-    for (int i = 0; i < row; ++i) {
-        for (int j = 0; j < column; ++j) {
-            if (mat[i][j] != INF) {
-                if (mat[i][j] == 0)
-                    cout << 0 << " ";
-                else
-                    cout << 1 << " ";
-            }
-            else
-                cout << "* ";
-        }
-        cout << endl;
+void Matrix::merge(int v1, int v2, Matrix &m) {
+    int i, begin, end, new_n = this->n + m.n, new_length;
+    new_length = this->length + m.length + this->n * m.n;
+    double *new_mat = new double[new_length];
+    std::copy(mat, mat + length, new_mat);
+    i = length;
+    for (int row = 0; row < m.n; row++) {
+        for (int j = 0; j < this->n; j++, i++)
+            new_mat[i] = INF;
+        begin = row * (row + 1) / 2;
+        end = begin + row + 1;
+        std::copy(m.mat + begin, m.mat + end, new_mat + i);
+        i += end - begin;
     }
-    cout << endl;
+    delete mat;
+    mat = new_mat;
+    n = new_n;
+    length = new_length;
 }
 
 void Matrix::del(int x) {
-    for (int i = 0; i < row; ++i)
-        for (int j = x; j < column - 1; ++j)
-            mat[i][j] = mat[i][j + 1];
-    for (int i = 0; i < column; ++i)
-        for (int j = x; j < row - 1; ++j)
-            mat[j][i] = mat[j + 1][i];
-    row--; column--;
+    if ((x < 0 || x >= n) || mat == NULL) {
+        std::cout << "Error!" << std::endl;
+        return;
+    }
+    int i = 0;
+    double *new_mat;
+    new_mat = new double[length - n];
+    for (int row = 0; row < n; row++) {
+        if (row == x)
+            continue;
+        for (int col = 0; col < row + 1; col++) {
+            if (col == x)
+                continue;
+            new_mat[i] = get_value(row, col);
+            i++;
+        }
+    }
+    delete mat;
+    mat = new_mat;
+    length = length - n;
+    n--;
 }
 
-void Matrix::plus(int length, Matrix& M) {
-    int i = 0, j = 0;
-    Matrix new_Matrix(row + length, column + length);
-    for (int k = 0; k < row; ++k) {
-        for (int l = 0; l < column; ++l) {
-            new_Matrix.mat[k][l] = mat[k][l];
-        }
+void Matrix::print() {
+    if (n < 1) {
+        std::cout << "Empty Matrix!" << std::endl;
+        return;
     }
-    for (int m = row; m < new_Matrix.row; ++m) {
-        for (int k = column; k < new_Matrix.column; ++k) {
-            new_Matrix.mat[m][k] = M.mat[i][j];
-            j++;
+    for (int row = 0; row < n; row++) {
+        for (int col = 0; col < n; col++) {
+            double w = get_value(row, col);
+            if (w == INF)
+                std::cout << "* ";
+            else
+                std::cout << get_value(row, col) << " ";
         }
-        j = 0;
-        i++;
+        std::cout << std::endl;
     }
-    for (int k = 0; k < row; ++k)
-        delete []mat[k];
-    delete mat;
-    row += length; column += length;
-    mat = new_Matrix.mat;
 }
