@@ -10,7 +10,7 @@ public:
     Matrix(const Matrix &);
     void set_value(int, int, double);
     double get_value(int, int);
-    void merge(int, int, Matrix &);
+    void merge(int, int, double, Matrix &);
     void del(int);
     void print();
 };
@@ -33,7 +33,7 @@ Matrix::Matrix(const Matrix &m) {
 
 void Matrix::set_value(int row, int col, double w) {
     if ((row >= n || col >= n) || (row < 0 || col < 0)) {
-        std::cout << "Error!" << std::endl;
+        std::cout << "Set Error!" << std::endl;
         return;
     }
     if (row >= col)
@@ -51,7 +51,7 @@ double Matrix::get_value(int row, int col) {
     return mat[row * (row + 1) / 2 + col];
 }
 
-void Matrix::merge(int v1, int v2, Matrix &m) {
+void Matrix::merge(int v1, int v2, double w,Matrix &m) {
     int i, begin, end, new_n = this->n + m.n, new_length;
     new_length = this->length + m.length + this->n * m.n;
     double *new_mat = new double[new_length];
@@ -67,13 +67,14 @@ void Matrix::merge(int v1, int v2, Matrix &m) {
     }
     delete mat;
     mat = new_mat;
-    n = new_n;
     length = new_length;
+    set_value(v1,n+v2,w);
+    n=new_n;
 }
 
 void Matrix::del(int x) {
     if ((x < 0 || x >= n) || mat == NULL) {
-        std::cout << "Error!" << std::endl;
+        std::cout << "Delete Error!" << std::endl;
         return;
     }
     int i = 0;

@@ -4,53 +4,6 @@ bool same_element(string, vector<Trajectory>&);
 void merge_graph(Graph&, Graph&, string, string, double);
 bool scmp(const Vaw &,const Vaw &);
 
-Trajectory::Trajectory() {
-    id = "";
-    length = 0;
-}
-
-Trajectory::Trajectory(string id, vector<Coord> cod) {
-    this->id = id;
-    this->length = cod.size();
-    this->cod = cod;
-}
-
-const Trajectory& Trajectory::operator=(const Trajectory& other) {
-    if (this != &other) {
-        if (this->length != 0)
-            this->clear();
-        if (other.length != 0) {
-            this->id = other.id;
-            this->length = other.length;
-            this->cod = other.cod;
-        }
-    }
-    return *this;
-}
-
-string Trajectory::getid() {
-    return id;
-}
-
-void Trajectory::clear() {
-    id = ""; length = 0;
-    cod.clear();
-}
-
-void Trajectory::area_track(double& xmin, double& xmax, double& ymin, double& ymax) {
-    xmin = cod[0].x; xmax = cod[0].x; ymin = cod[0].y; ymax = cod[0].y;
-    for (int i = 0; i < length; ++i) {
-        if (cod[i].x <= xmin)
-            xmin = cod[i].x;
-        if (cod[i].x >= xmax)
-            xmax = cod[i].x;
-        if (cod[i].y <= ymin)
-            ymin = cod[i].y;
-        if (cod[i].y >= ymax)
-            ymax = cod[i].y;
-    }
-}
-
 /*
 void sync_track(Trajectory &p, Trajectory &q, bool flag = false) {
     for (int i = 0; i < q.length; ++i)
@@ -208,19 +161,19 @@ double distance_track(Trajectory p, Trajectory q) {
 
 Matrix distance_matrix(vector<Trajectory> &TEC, double &max, double &min) {
     int n = TEC.size();
-    Matrix TDM(n, n);
+    Matrix TDM(n);
     max = 0; min = INF;
     for (int i = 0; i < n; ++i) {
         for (int j = i + 1; j < n; ++j) {
-            TDM.set(i, i, 0);
+            TDM.set_value(i, i, 0);
             double dis = distance_track(TEC[i], TEC[j]);
-            TDM.set(i, j, dis);
-            TDM.set(j, i, dis);
-            if (TDM.weight(i, j) >= max) {
-                max = TDM.weight(i, j);
+            TDM.set_value(i, j, dis);
+            TDM.set_value(j, i, dis);
+            if (TDM.get_value(i, j) >= max) {
+                max = TDM.get_value(i, j);
             }
-            if (TDM.weight(i, j) <= min && i != j) {
-                min = TDM.weight(i, j);
+            if (TDM.get_value(i, j) <= min && i != j) {
+                min = TDM.get_value(i, j);
             }
         }
     }
@@ -248,7 +201,7 @@ double EW_Cons(double cpq, int i, int j, Matrix &TDM, double alpha, double beta,
     if (max == min)
         return w;
     else {
-        w += beta * (TDM.weight(i, j) - min) / (max - min);
+        w += beta * (TDM.get_value(i, j) - min) / (max - min);
         return w;
     }
 }
@@ -339,7 +292,7 @@ double Anony_track(double &IL, vector<Trajectory> &TEC, int k, double s, double 
                     }
                 }
                 if(cost!=INF)
-                    merge_graph(G[i], S[min_cost_pos], id, id_connect, cost);
+                    merge_graph(G[i], S[min_cost_pos], id, id_connect, cost); //id-G1 id_connect-G2
                 //在TG中删除G[i]
                 if(TG.countV()<=0)
                     break;
@@ -405,8 +358,7 @@ bool same_element(string id, vector<Trajectory>& v) {
 void merge_graph(Graph& G1, Graph& G2, string id, string id_connect,double w) {
     //G1合并到G2
     G2.V.insert(G2.V.end(), G1.V.begin(), G1.V.end());
-    G2.WE.plus(G1.countV(), G1.WE);
-    G2.WE.set(G2.find(id),G2.find(id_connect),w);
+    G2.WE.merge(G2.find(id_connect),G1.find(id), w,G1.WE);
     return;
 }
 

@@ -1,3 +1,5 @@
+#include <set>
+#include <math.h>
 #include "Matrix.h"
 #include "Trajectory.h"
 using namespace std;
@@ -9,7 +11,9 @@ class Graph
     void depth_search(int , bool *, vector<int>&);
 public:
     Graph();
-    Graph(int size);
+    Graph(int size):WE(size){
+
+    };
     Graph(vector<Trajectory> &t);
     Graph(const Graph &G): WE(G.WE) {
         V = G.V;
@@ -34,10 +38,6 @@ public:
     friend void merge_graph(Graph&, Graph&, string, string, double);
     friend Graph TDM_Cons(vector<Trajectory>&, double, double, double, double);
 };
-
-Graph::Graph(int size): WE(size) {
-
-}
 
 Graph::Graph(vector<Trajectory> &t): WE(t.size()) {
     V = t;

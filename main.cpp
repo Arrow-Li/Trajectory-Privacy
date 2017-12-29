@@ -1,11 +1,12 @@
+#include <iomanip>
+#include <fstream>
+#include <time.h>
 #include "en_tra.h"
-#include "fstream"
-#include "time.h"
 #define DATA_LIST "/Volumes/Macintosh HD 2/Documents/data/list.txt"
-#define DATA_PATH "/Volumes/Macintosh HD 2/Documents/data/new_"
+#define DATA_PATH "/Volumes/Macintosh HD 2/Documents/Work/test_data/new_"
 #define DATA_WIN "C:\\Users\\Jeep Li\\Documents\\Cprogram\\Work\\test_data\\new_"
 #define TEST_WIN "C:\\Users\\Jeep Li\\Documents\\Cprogram\\Work\\test_data\\list.txt"
-#define TEST_LIST "/Volumes/Macintosh HD 2/Documents/data/test.txt"
+#define TEST_LIST "/Volumes/Macintosh HD 2/Documents/Work/test_data/list.txt"
 
 double AREA;
 vector<Trajectory> read_data();
@@ -69,11 +70,11 @@ vector<Trajectory> read_data(){
     Coord temp_pos;
     //f.open(DATA_LIST,ios::in);
     //f.open(TEST_LIST,ios::in);
-    f.open(TEST_WIN,ios::in);
+    f.open(TEST_LIST,ios::in);
     while(!f.eof()){ //读取出租车列表
         f>>id>>length;
         //path=DATA_PATH+id+".txt";
-        path=DATA_WIN+id+".txt";
+        path=DATA_PATH+id+".txt";
         f_c.open(path,ios::in);
         for (int i = 0; i < length; ++i) { //读取每个出租车的轨迹
             f_c>>temp_pos.x>>temp_pos.y>>skip>>temp_pos.t; //纬度，经度，无用，时间(UNIX时间戳)
