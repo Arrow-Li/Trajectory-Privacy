@@ -66,9 +66,11 @@ void Matrix::merge(int v1, int v2, double w,Matrix &m) {
         i += end - begin;
     }
     delete mat;
+    v2+=n;
+    n=new_n;
     mat = new_mat;
     length = new_length;
-    set_value(v1,n+v2,w);
+    set_value(v1,v2,w);
     n=new_n;
 }
 

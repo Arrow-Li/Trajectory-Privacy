@@ -15,11 +15,13 @@ void write_data(vector<Trajectory>&);
 
 int main(){
     for (int i = 1; i <= 7; i++) {
-        int a=clock();
+        clock_t begin;
+        double used_time;
+        begin=clock();
         fun_run(5,i);
         AREA = 0;
-        int b=clock()-a;
-        cout<<b<<"ms"<<endl;
+        used_time=(double)(clock()-begin)/CLOCKS_PER_SEC;
+        cout<<used_time<<"s"<<endl;
     }
 }
 
