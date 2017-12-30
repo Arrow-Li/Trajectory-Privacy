@@ -1,19 +1,17 @@
 #include "Matrix.h"
 #include "Trajectory.h"
+#include <algorithm>
+#include <memory.h>
 #include <math.h>
-#include <set>
 using namespace std;
 
 class Graph {
   vector<Trajectory> V;
   Matrix WE;
-  void depth_search(int, bool *, vector<int> &);
+  void visit(int, bool *, vector<int> &);
 
 public:
-  Graph(int size)
-      : WE(size){
-
-        };
+  Graph(int size) : WE(size){};
   Graph(vector<Trajectory> &t);
   Graph(const Graph &G) : WE(G.WE) { V = G.V; }
   int countV();
@@ -88,6 +86,7 @@ void Graph::deleteV(string x) {
 double Graph::minE(Trajectory &v1, Trajectory &v2) {
   double min = INF;
   int x = 0, y = 0;
+
   for (int i = 0; i < V.size(); ++i) {
     for (int j = i + 1; j < V.size(); ++j) {
       if (WE.get_value(i, j) < min && WE.get_value(i, j) > 0) {
@@ -110,7 +109,7 @@ Graph Graph::create_child(vector<int> id) {
     T.push_back(V[id[i]]);
   Graph G(T);
   for (int i = 0; i < id.size(); ++i) {
-    for (int j = 0; j < id.size(); ++j) {
+    for (int j = 0; j < i+1; ++j) {
       G.WE.set_value(i, j, WE.get_value(id[i], id[j]));
     }
   }
@@ -125,7 +124,8 @@ vector<Graph> Graph::DFS(int vi) {
   memset(visited, false, sizeof(visited));
   do {
     if (!visited[i]) {
-      depth_search(i, visited, child);
+      visit(i, visited, child);
+      sort(child.begin(),child.end());
       G.push_back(create_child(child));
       child.clear();
     }
@@ -145,12 +145,12 @@ int Graph::next(int i, int j = -1) {
   return -1;
 }
 
-void Graph::depth_search(int vi, bool *visited, vector<int> &child) {
+void Graph::visit(int vi, bool *visited, vector<int> &child) {
   visited[vi] = true;
   child.push_back(vi);
   for (int i = next(vi); i != -1; i = next(vi, i)) {
     if (!visited[i]) {
-      depth_search(i, visited, child);
+        visit(i, visited, child);
     }
   }
 }

@@ -1,5 +1,4 @@
 #include "Graph.h"
-#include "iostream"
 bool same_element(string, vector<Trajectory> &);
 void merge_graph(Graph &, Graph &, string, string, double);
 bool scmp(const Vaw &, const Vaw &);
@@ -179,7 +178,7 @@ Matrix distance_matrix(vector<Trajectory> &TEC, double &max, double &min) {
   min = INF;
   for (int i = 0; i < n; ++i) {
     for (int j = i + 1; j < n; ++j) {
-      TDM.set_value(i, i, 0);
+      TDM.set_value(i, i, INF); //节点自身距离设为无穷大
       double dis = distance_track(TEC[i], TEC[j]);
       TDM.set_value(i, j, dis);
       TDM.set_value(j, i, dis);
@@ -238,12 +237,9 @@ Graph TDM_Cons(vector<Trajectory> &TEC, double s, double lambda, double alpha,
   return TG;
 }
 
-double Anony_track(double &IL, vector<Trajectory> &TEC, int k, double s,
-                   double lambda, double alpha, double beta, int &ti) {
+double Anony_track(double &IL, vector<Trajectory> &TEC, int k, double s, double lambda, double alpha, double beta, int &ti) {
   Graph TG(TDM_Cons(TEC, s, lambda, alpha, beta)), *V;
-  // TG.show();
   vector<Graph> G(TG.DFS(0)), S;
-  cout << G.size() << endl;
   vector<Vaw> W;
   double n_TEC = TEC.size(), TSR = 0;
   //隐匿Size<k的连通分量

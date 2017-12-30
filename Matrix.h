@@ -27,8 +27,8 @@ Matrix::Matrix(int n) {
 Matrix::Matrix(const Matrix &m) {
   this->n = m.n;
   this->length = m.length;
-  this->mat = new double[this->n];
-  for (int i = 0; i < n; i++)
+  this->mat = new double[length];
+  for (int i = 0; i < length; i++)
     this->mat[i] = m.mat[i];
 }
 
