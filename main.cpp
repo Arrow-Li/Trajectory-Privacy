@@ -14,11 +14,11 @@ void fun_run(int, int);
 void write_data(vector<Trajectory> &);
 
 int main() {
-  for (int i = 1; i <= 7; i++) {
+  for (int i = 4; i <= 10; i++) {
     clock_t begin;
     double used_time;
     begin = clock();
-    fun_run(5, i);
+    fun_run(i, 5);
     AREA = 0;
     used_time = (double)(clock() - begin) / CLOCKS_PER_SEC;
     cout << used_time << "s" << endl;
@@ -57,8 +57,8 @@ void fun_run(int k, int s) {
     //等价类规模过小 隐匿率100%怎么办
     TSR += Anony_track(IL, TEC, k, s, 0.9, 0.3, 0.7, ti); // 0.837758
   }
-  // cout<<"IL="<<IL/(n_TEC*AREA)*100<<"%,";
-  // cout<<"TSR="<<TSR/n_TEC*100<<"%"<<endl;
+  cout<<"IL="<<IL/(n_TEC*AREA)*100<<"%,";
+  cout<<"TSR="<<TSR/n_TEC*100<<"%"<<endl;
 }
 
 vector<Trajectory> read_data() {
@@ -72,11 +72,11 @@ vector<Trajectory> read_data() {
   Coord temp_pos;
   // f.open(DATA_LIST,ios::in);
   // f.open(TEST_LIST,ios::in);
-  f.open(TEST_WIN, ios::in);
+  f.open(TEST_LIST, ios::in);
   while (!f.eof()) { //读取出租车列表
     f >> id >> length;
     // path=DATA_PATH+id+".txt";
-    path = DATA_WIN + id + ".txt";
+    path = DATA_PATH + id + ".txt";
     f_c.open(path, ios::in);
     for (int i = 0; i < length; ++i) { //读取每个出租车的轨迹
       f_c >> temp_pos.x >> temp_pos.y >> skip >>

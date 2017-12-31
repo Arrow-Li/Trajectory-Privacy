@@ -237,7 +237,8 @@ Graph TDM_Cons(vector<Trajectory> &TEC, double s, double lambda, double alpha,
   return TG;
 }
 
-double Anony_track(double &IL, vector<Trajectory> &TEC, int k, double s, double lambda, double alpha, double beta, int &ti) {
+double Anony_track(double &IL, vector<Trajectory> &TEC, int k, double s,
+                   double lambda, double alpha, double beta, int &ti) {
   Graph TG(TDM_Cons(TEC, s, lambda, alpha, beta)), *V;
   vector<Graph> G(TG.DFS(0)), S;
   vector<Vaw> W;
@@ -270,7 +271,7 @@ double Anony_track(double &IL, vector<Trajectory> &TEC, int k, double s, double 
         V = new Graph(k);
         V->insertV(v1);
         V->insertV(v2);
-        V->insertE(0, 1, min_e);
+        V->insertE(0, 1, min_e); //TODO k=1越界？
         while (V->countV() < k) {
           for (int j = 0; j < V->countV(); ++j) {
             vector<string> Array_Link = G[i].linkV(V->refind(j));

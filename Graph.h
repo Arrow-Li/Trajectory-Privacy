@@ -1,8 +1,8 @@
 #include "Matrix.h"
 #include "Trajectory.h"
 #include <algorithm>
-#include <memory.h>
 #include <math.h>
+#include <memory.h>
 using namespace std;
 
 class Graph {
@@ -109,7 +109,7 @@ Graph Graph::create_child(vector<int> id) {
     T.push_back(V[id[i]]);
   Graph G(T);
   for (int i = 0; i < id.size(); ++i) {
-    for (int j = 0; j < i+1; ++j) {
+    for (int j = 0; j < i + 1; ++j) {
       G.WE.set_value(i, j, WE.get_value(id[i], id[j]));
     }
   }
@@ -125,7 +125,7 @@ vector<Graph> Graph::DFS(int vi) {
   do {
     if (!visited[i]) {
       visit(i, visited, child);
-      sort(child.begin(),child.end());
+      sort(child.begin(), child.end());
       G.push_back(create_child(child));
       child.clear();
     }
@@ -150,7 +150,7 @@ void Graph::visit(int vi, bool *visited, vector<int> &child) {
   child.push_back(vi);
   for (int i = next(vi); i != -1; i = next(vi, i)) {
     if (!visited[i]) {
-        visit(i, visited, child);
+      visit(i, visited, child);
     }
   }
 }
