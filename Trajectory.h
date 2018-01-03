@@ -13,24 +13,25 @@ struct Vaw {
 
 class Trajectory {
     std::string id;
-    unsigned long length;
-    // vector<Coord> cod;
-   public:
+    unsigned int length;
     std::vector<Coord> cod;
+   public:
     Trajectory();
-    Trajectory(std::string, std::vector<Coord>);
     Trajectory(const Trajectory &p) {
         id = p.id;
         length = p.length;
         cod = p.cod;
     }
+    Trajectory(std::string, std::vector<Coord>);
     const Trajectory &operator=(const Trajectory &);
     void clear();
     std::string getId();
-    unsigned long getLength();
+    Coord getCoord(int);
+    unsigned int getLength();
+    void insertNode(unsigned  int, double);
+    void syncTrajectory(std::set<double> &);
     void areaTrack(double &, double &, double &, double &);
-    friend void syncTrajectory(Trajectory &, std::set<double> &);
-    friend void insert_cod(Trajectory &, int, double, bool);
+    friend void write_data(std::vector<Trajectory> &); //TODO temp
     friend std::vector<Trajectory> Equal_tracks(std::vector<Trajectory> &,
                                                 double);
     friend double distance_track(Trajectory, Trajectory);
@@ -45,7 +46,7 @@ Trajectory::Trajectory() {
 
 Trajectory::Trajectory(std::string id, std::vector<Coord> cod) {
     this->id = id;
-    this->length = cod.size();
+    this->length = (unsigned int)cod.size();
     this->cod = cod;
 }
 
@@ -62,6 +63,10 @@ const Trajectory &Trajectory::operator=(const Trajectory &other) {
 }
 
 std::string Trajectory::getId() { return id; }
+
+Coord Trajectory::getCoord(int x) { return cod[x]; }
+
+unsigned int Trajectory::getLength() { return this->length; }
 
 void Trajectory::clear() {
     id = "";
@@ -83,4 +88,41 @@ void Trajectory::areaTrack(double &xmin, double &xmax, double &ymin,
     }
 }
 
-unsigned long Trajectory::getLength() { return this->length; }
+void Trajectory::insertNode(unsigned int i, double t) {
+    double newX,newY,ratio;
+    ratio=(t-cod[i].t)/(cod[i+1].t-cod[i].t);
+    newX=cod[i].x+ratio*(cod[i+1].x-cod[i].x);
+    newY=cod[i].y+ratio*(cod[i+1].y-cod[i].y);
+    Coord newCoord={newX,newY,t};
+    if(t<cod[i].t) //插入两点之前
+        cod.insert(cod.begin()+i,newCoord);
+    else {
+        if(t>cod[i+1].t) //插入两点之后
+            cod.push_back(newCoord);
+        else //插入两点之间
+            cod.insert(cod.begin()+i+1,newCoord);
+    }
+    this->length++;
+}
+
+void Trajectory::syncTrajectory(std::set<double>& timeLine) {
+    int i = 0;
+    for(auto t:timeLine){
+        if(t<cod[0].t){
+            insertNode(0,t);
+            continue;
+        }
+        while(i<this->length-1){
+            if(cod[i].t<t&&t<cod[i+1].t){
+                insertNode(i,t);
+                i++;
+                break;
+            }
+            i++;
+        }
+        if(t>cod[length-1].t){
+            insertNode(length-1,t);
+            i++;
+        }
+    }
+}

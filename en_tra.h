@@ -38,79 +38,6 @@ void sync_track(Trajectory &p, Trajectory &q, bool flag = false) {
 }
 */
 
-void insert_cod(Trajectory& p, int i, double t, bool special = false) {
-    double x_new, y_new;
-    if (special) {
-        if (i == 0) {
-            x_new = (p.cod[i].x * (p.cod[i + 1].t - t) -
-                     p.cod[i + 1].x * (p.cod[i].t - t)) /
-                    (p.cod[i + 1].t - p.cod[i].t);
-            y_new = p.cod[i + 1].y + (p.cod[i + 1].t - t) *
-                                         (p.cod[i].y - p.cod[i + 1].y) /
-                                         (p.cod[i + 1].t - p.cod[i].t);
-            Coord new_cod = {x_new, y_new, t};
-            p.cod.insert(p.cod.begin(), new_cod);
-        } else {
-            x_new = p.cod[i - 1].x + (p.cod[i].x - p.cod[i - 1].x) *
-                                         (t - p.cod[i - 1].t) /
-                                         (p.cod[i].t - p.cod[i - 1].t);
-            y_new = p.cod[i - 1].y + (p.cod[i].y - p.cod[i - 1].y) *
-                                         (t - p.cod[i - 1].t) /
-                                         (p.cod[i].t - p.cod[i - 1].t);
-            Coord new_cod = {x_new, y_new, t};
-            p.cod.insert(p.cod.begin() + i + 1, new_cod);
-        }
-    } else {
-        x_new = p.cod[i].x + (p.cod[i + 1].x - p.cod[i].x) * (t - p.cod[i].t) /
-                                 (p.cod[i + 1].t - p.cod[i].t);
-        y_new = p.cod[i].y + (p.cod[i + 1].y - p.cod[i].y) * (t - p.cod[i].t) /
-                                 (p.cod[i + 1].t - p.cod[i].t);
-        Coord new_cod = {x_new, y_new, t};
-        p.cod.insert(p.cod.begin() + i + 1, new_cod);
-    }
-    p.length++;
-    return;
-}
-
-void syncTrajectory(Trajectory& p, std::set<double>& time_line) {
-    int i = 0;
-    for (auto t : time_line) {
-        if (t < p.cod[0].t) {  //插入轨迹前
-            insert_cod(p, 0, t, true);
-
-            /*
-      Coord new_cod={p.cod[0].x,p.cod[0].y,t};
-      p.cod.insert(p.cod.begin(),new_cod);
-      p.length++;
-      */
-
-            continue;
-        }
-        if (t > p.cod[p.length - 1].t) {  //插入轨迹后
-            insert_cod(p, p.length - 1, t, true);
-
-            /*
-      Coord new_cod={p.cod[p.length-1].x,p.cod[p.length-1].y,t};
-      p.cod.insert(p.cod.begin()+p.length,new_cod);
-      p.length++;
-      */
-
-            i++;
-            continue;
-        }
-        while (i < p.length) {
-            if (t == p.cod[i].t) break;
-            if (t < p.cod[i + 1].t && t > p.cod[i].t) {  //插入轨迹中
-                insert_cod(p, i, t);
-                i++;
-                break;
-            }
-            i++;
-        }
-        if (t == p.cod[i].t) continue;
-    }
-}
-
 TrajectorySet Equal_tracks(TrajectorySet& T, double tp) {
     TrajectorySet equ_T;
     double s_t1, s_t2, end_t1, end_t2;
@@ -133,7 +60,7 @@ TrajectorySet Equal_tracks(TrajectorySet& T, double tp) {
             it++;
     }
     for (int i = 0; i < equ_T.size(); ++i) {
-        syncTrajectory(equ_T[i], time_line);
+        equ_T[i].syncTrajectory(time_line);
     }
     return equ_T;
 }
@@ -362,9 +289,9 @@ double Anony_track(double& IL, TrajectorySet& TEC, int k, double s,
         ti++;
         return 1;
     }
-    double x_max = S[0].getV(0).cod[ti % S[0].getV(0).getLength()].x,
+    double x_max = S[0].getV(0).getCoord(ti % S[0].getV(0).getLength()).x,
            x_min = x_max,
-           y_max = S[0].getV(0).cod[ti % S[0].getV(0).getLength()].y,
+           y_max = S[0].getV(0).getCoord(ti % S[0].getV(0).getLength()).y,
            y_min = y_max;
     for (auto g : S) g.count_area(ti, x_max, x_min, y_max, y_min);
     ti++;

@@ -172,10 +172,10 @@ void Graph::count_area(int t, double &x_max, double &x_min, double &y_max,
     // TODO 计算匿名域面积
     for (int j = 0; j < this->countV(); ++j) {
         t %= this->V[j].getLength();
-        x_min = (this->V[j].cod[t].x < x_min) ? this->V[j].cod[t].x : x_min;
-        x_max = (this->V[j].cod[t].x > x_max) ? this->V[j].cod[t].x : x_max;
-        y_min = (this->V[j].cod[t].y < y_min) ? this->V[j].cod[t].y : y_min;
-        y_max = (this->V[j].cod[t].y > y_max) ? this->V[j].cod[t].y : y_max;
+        x_min = (this->V[j].getCoord(t).x < x_min) ? this->V[j].getCoord(t).x : x_min;
+        x_max = (this->V[j].getCoord(t).x > x_max) ? this->V[j].getCoord(t).x : x_max;
+        y_min = (this->V[j].getCoord(t).y < y_min) ? this->V[j].getCoord(t).y : y_min;
+        y_max = (this->V[j].getCoord(t).y > y_max) ? this->V[j].getCoord(t).y : y_max;
     }
     return;
 }

@@ -10,9 +10,9 @@
 using namespace std;
 
 double AREA;
-vector<Trajectory> read_data();
+TrajectorySet read_data();
 void fun_run(int, int);
-void write_data(vector<Trajectory> &);
+void write_data(TrajectorySet &);
 
 int main() {
     for (int i = 4; i <= 10; i++) {
@@ -29,8 +29,8 @@ int main() {
 void fun_run(int k, int s) {
     int ti = 0, n_TEC = 0;
     double IL = 0, TSR = 0;
-    vector<Trajectory> ALL_T;
-    vector<vector<Trajectory>> ALL_TEC;
+    TrajectorySet ALL_T;
+    vector<TrajectorySet> ALL_TEC;
     ALL_T = read_data();
 
     while (ALL_T.size() != 0) {
@@ -62,13 +62,13 @@ void fun_run(int k, int s) {
     cout << "TSR=" << TSR / n_TEC * 100 << "%" << endl;
 }
 
-vector<Trajectory> read_data() {
+TrajectorySet read_data() {
     int length, skip;
     bool fb = true;
     double x_max, x_min, y_max, y_min;
     string id, path;
     fstream f, f_c;
-    vector<Trajectory> all_t;
+    TrajectorySet all_t;
     vector<Coord> temp_t;
     Coord temp_pos;
     // f.open(DATA_LIST,ios::in);
@@ -106,7 +106,7 @@ vector<Trajectory> read_data() {
     return all_t;
 }
 
-void write_data(vector<Trajectory> &t) {  //格式化输出测试数据,方便导入Excel
+void write_data(TrajectorySet &t) {  //格式化输出测试数据,方便导入Excel
     fstream f;
     string path = "";
     path = DATA_PATH + path + "one.out";
