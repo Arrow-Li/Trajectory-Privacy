@@ -90,39 +90,37 @@ void Trajectory::areaTrack(double &xmin, double &xmax, double &ymin,
 
 void Trajectory::insertNode(unsigned int i, double t) {
     double newX,newY,ratio;
-    ratio=(t-cod[i].t)/(cod[i+1].t-cod[i].t);
-    newX=cod[i].x+ratio*(cod[i+1].x-cod[i].x);
-    newY=cod[i].y+ratio*(cod[i+1].y-cod[i].y);
-    Coord newCoord={newX,newY,t};
-    if(t<cod[i].t) //插入两点之前
-        cod.insert(cod.begin()+i,newCoord);
-    else {
-        if(t>cod[i+1].t) //插入两点之后
-            cod.push_back(newCoord);
-        else //插入两点之间
-            cod.insert(cod.begin()+i+1,newCoord);
+    Coord newCoord;
+    if(i==0){ //插头结点
+        ratio=(t-cod[i].t)/(cod[i+1].t-cod[i].t);
+        newX=cod[i].x+ratio*(cod[i+1].x-cod[i].x);
+        newY=cod[i].y+ratio*(cod[i+1].y-cod[i].y);
+        newCoord={newX,newY,t};
+        cod.insert(cod.begin(),newCoord);
     }
-    this->length++;
+    else {
+        if(i>=length) {//插尾部
+            ratio=(t-cod[i-2].t)/(cod[i-1].t-cod[i-2].t);
+            newX=cod[i-2].x+ratio*(cod[i-1].x-cod[i-2].x);
+            newY=cod[i-2].y+ratio*(cod[i-1].y-cod[i-2].y);
+            newCoord={newX,newY,t};
+        }
+        else {
+            ratio=(t-cod[i-1].t)/(cod[i].t-cod[i-1].t);
+            newX=cod[i-1].x+ratio*(cod[i].x-cod[i-1].x);
+            newY=cod[i-1].y+ratio*(cod[i].y-cod[i-1].y);
+            newCoord={newX,newY,t};
+        }
+        cod.insert(cod.begin()+i,newCoord);
+    }
+    length++;
 }
 
 void Trajectory::syncTrajectory(std::set<double>& timeLine) {
-    int i = 0;
+    int i=0;
     for(auto t:timeLine){
-        if(t<cod[0].t){
-            insertNode(0,t);
-            continue;
-        }
-        while(i<this->length-1){
-            if(cod[i].t<t&&t<cod[i+1].t){
-                insertNode(i,t);
-                i++;
-                break;
-            }
-            i++;
-        }
-        if(t>cod[length-1].t){
-            insertNode(length-1,t);
-            i++;
-        }
+        if(cod[i].t!=t)
+            insertNode(i,t);
+        i++;
     }
 }
