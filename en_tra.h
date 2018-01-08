@@ -3,45 +3,10 @@ bool same_element(std::string, TrajectorySet&);
 void merge_graph(Graph&, Graph&, std::string, std::string, double);
 bool scmp(const Vaw&, const Vaw&);
 
-/*
-void sync_track(Trajectory &p, Trajectory &q, bool flag = false) {
-    for (int i = 0; i < q.length; ++i)
-    {
-        for (int j = 0; j < p.length; ++j)
-        {
-            if (q.cod[i].t == p.cod[j].t)
-                break;
-            if (q.cod[i].t < p.cod[j].t) {
-                double x_new, y_new;
-                x_new = p.cod[j].x + (p.cod[j + 1].x - p.cod[j].x) * (q.cod[i].t
-- p.cod[j].t) / (p.cod[j + 1].t - p.cod[j].t); y_new = p.cod[j].y + (p.cod[j +
-1].y - p.cod[j].y) * (q.cod[i].t - p.cod[j].t) / (p.cod[j + 1].t - p.cod[j].t);
-                Coord cod_new = {x_new, y_new, q.cod[i].t};
-                p.cod.insert(p.cod.begin() + j, cod_new);
-                p.length++;
-                break;
-            }
-            if (j == p.length - 1 && (q.cod[i].t > p.cod[j].t)) {
-                double x_new, y_new;
-                x_new = p.cod[j].x + (p.cod[j].x - p.cod[j - 1].x) * (q.cod[i].t
-- p.cod[j].t) / (p.cod[j].t - p.cod[j - 1].t); y_new = p.cod[j].y + (p.cod[j].y
-- p.cod[j - 1].y) * (q.cod[i].t - p.cod[j].t) / (p.cod[j].t - p.cod[j - 1].t);
-                Coord cod_new = {x_new, y_new, q.cod[i].t};
-                p.cod.insert(p.cod.begin() + j + 1, cod_new);
-                p.length++;
-            }
-        }
-    }
-    if (flag)
-        return;
-    syncTrajectory(q, p, true);
-}
-*/
-
-TrajectorySet Equal_tracks(TrajectorySet& T, double tp) {
-    TrajectorySet equ_T;
+TrajectorySet EqualTrack(TrajectorySet &T, double tp) { //TODO 等价类构造 范围选取
+    TrajectorySet equalT;
     double s_t1, s_t2, end_t1, end_t2;
-    std::set<double> time_line;
+    std::set<double> timeLine;
     // tp*=T[0].cod[T[0].length-1].t-T[0].cod[0].t;
     s_t1 = T[0].cod[0].t - tp;
     s_t2 = T[0].cod[0].t + tp;
@@ -52,20 +17,20 @@ TrajectorySet Equal_tracks(TrajectorySet& T, double tp) {
         int l = (*it).length - 1;
         if (((*it).cod[0].t >= s_t1 && (*it).cod[0].t <= s_t2) &&
             ((*it).cod[l].t >= end_t1 && (*it).cod[l].t <= end_t2)) {
-            equ_T.push_back(*it);
+            equalT.push_back(*it);
             for (int i = 0; i <= l; ++i)
-                time_line.insert((*it).cod[i].t);  //生成时间轴
+                timeLine.insert((*it).cod[i].t);  //生成时间轴
             T.erase(it);
         } else
             it++;
     }
-    for (int i = 0; i < equ_T.size(); ++i) {
-        equ_T[i].syncTrajectory(time_line);
+    for (int i = 0; i < equalT.size(); ++i) {
+        equalT[i].syncTrajectory(timeLine);
     }
-    return equ_T;
+    return equalT;
 }
 
-double cos_angle(Trajectory p, Trajectory q) {
+double getTrackCos(Trajectory p, Trajectory q) {
     int ignore = 1;
     double cos_value = 0;
     for (int i = 0; i < p.length - 1; ++i) {
@@ -87,7 +52,7 @@ double cos_angle(Trajectory p, Trajectory q) {
     return cos_value;
 }
 
-double distance_track(Trajectory p, Trajectory q) {
+double getTrackDis(Trajectory p, Trajectory q) {
     double dis = 0;
     for (int i = 0; i < p.length; ++i) {
         double tmp = pow((p.cod[i].x - q.cod[i].x), 2) +
@@ -98,7 +63,7 @@ double distance_track(Trajectory p, Trajectory q) {
     return dis;
 }
 
-Matrix distance_matrix(TrajectorySet& TEC, double& max, double& min) {
+Matrix getDisMatrix(TrajectorySet &TEC, double &max, double &min) {
     int n = TEC.size();
     Matrix TDM(n);
     max = 0;
@@ -106,15 +71,11 @@ Matrix distance_matrix(TrajectorySet& TEC, double& max, double& min) {
     for (int i = 0; i < n; ++i) {
         for (int j = i + 1; j < n; ++j) {
             TDM.setValue(i, i, INF);  //节点自身距离设为无穷大
-            double dis = distance_track(TEC[i], TEC[j]);
-            TDM.setValue(i, j, dis);
-            TDM.setValue(j, i, dis);
-            if (TDM.getValue(i, j) >= max) {
+            TDM.setValue(i, j, getTrackDis(TEC[i], TEC[j]));
+            if (TDM.getValue(i, j) >= max)
                 max = TDM.getValue(i, j);
-            }
-            if (TDM.getValue(i, j) <= min && i != j) {
+            if (TDM.getValue(i, j) <= min)
                 min = TDM.getValue(i, j);
-            }
         }
     }
     return TDM;
@@ -123,7 +84,7 @@ Matrix distance_matrix(TrajectorySet& TEC, double& max, double& min) {
 bool slcover(Trajectory p, Trajectory q, int s, double lambda, double& cpq) {
     double xmax, xmin, ymax, ymin;
     int count = 0;
-    cpq = cos_angle(p, q);
+    cpq = getTrackCos(p, q);
     if (cpq < cos(lambda) || cpq > 1) return false;
     q.areaTrack(xmin, xmax, ymin, ymax);
     for (int i = 0; i < p.length; ++i) {
@@ -146,26 +107,23 @@ double EW_Cons(double cpq, int i, int j, Matrix& TDM, double alpha, double beta,
     }
 }
 
-Graph TDM_Cons(TrajectorySet& TEC, double s, double lambda, double alpha,
+Graph createTG(TrajectorySet &TEC, double s, double lambda, double alpha,
                double beta) {  //如何随机？
     Graph TG(TEC);
     double max, min, cos_t, length = TEC[0].getLength();
-    Matrix TDM(distance_matrix(TEC, max, min));
+    Matrix TDM(getDisMatrix(TEC, max, min));
     for (int i = 0; i < TG.V.size(); ++i) {
         for (int j = i + 1; j < TG.V.size(); ++j) {
             if (slcover(TG.V[i], TG.V[j], s, lambda, cos_t))
-                TG.insertE(i, j,
-                           EW_Cons(cos_t, i, j, TDM, alpha, beta, max, min));
-            else
-                TG.insertE(i, j, INF);
+                TG.insertE(i, j, EW_Cons(cos_t, i, j, TDM, alpha, beta, max, min));
         }
     }
     return TG;
 }
 
-double Anony_track(double& IL, TrajectorySet& TEC, int k, double s,
-                   double lambda, double alpha, double beta, int& ti) {
-    Graph TG(TDM_Cons(TEC, s, lambda, alpha, beta)), *V;
+double AnonyTrack(double &IL, TrajectorySet &TEC, int k, double s,
+                  double lambda, double alpha, double beta, int &ti) {
+    Graph TG(createTG(TEC, s, lambda, alpha, beta)), *V;
     std::vector<Graph> G(TG.DFS(0)), S;
     std::vector<Vaw> W;
     double n_TEC = TEC.size(), TSR = 0;

@@ -32,10 +32,10 @@ class Trajectory {
     void syncTrajectory(std::set<double> &);
     void areaTrack(double &, double &, double &, double &);
     friend void write_data(std::vector<Trajectory> &); //TODO temp
-    friend std::vector<Trajectory> Equal_tracks(std::vector<Trajectory> &,
-                                                double);
-    friend double distance_track(Trajectory, Trajectory);
-    friend double cos_angle(Trajectory, Trajectory);
+    friend std::vector<Trajectory> EqualTrack(std::vector<Trajectory> &,
+                                              double);
+    friend double getTrackDis(Trajectory, Trajectory);
+    friend double getTrackCos(Trajectory, Trajectory);
     friend bool slcover(Trajectory, Trajectory, int, double, double &);
 };
 
@@ -117,7 +117,7 @@ void Trajectory::insertNode(unsigned int i, double t) {
 }
 
 void Trajectory::syncTrajectory(std::set<double>& timeLine) {
-    int i=0;
+    unsigned int i=0;
     for(auto t:timeLine){
         if(cod[i].t!=t)
             insertNode(i,t);

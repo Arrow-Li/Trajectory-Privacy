@@ -34,7 +34,7 @@ void fun_run(int k, int s) {
     ALL_T = read_data();
 
     while (ALL_T.size() != 0) {
-        ALL_TEC.push_back(Equal_tracks(ALL_T, 100));
+        ALL_TEC.push_back(EqualTrack(ALL_T, 100));
     }
     n_TEC = ALL_TEC.size();
 
@@ -56,7 +56,7 @@ void fun_run(int k, int s) {
             continue;
         }
         //等价类规模过小 隐匿率100%怎么办
-        TSR += Anony_track(IL, TEC, k, s, 0.9, 0.3, 0.7, ti);  // 0.837758
+        TSR += AnonyTrack(IL, TEC, k, s, 0.9, 0.3, 0.7, ti);  // 0.837758
     }
     cout << "IL=" << IL / (n_TEC * AREA) * 100 << "%,";
     cout << "TSR=" << TSR / n_TEC * 100 << "%" << endl;

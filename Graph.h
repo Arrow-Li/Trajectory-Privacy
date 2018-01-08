@@ -32,7 +32,7 @@ class Graph {
     std::vector<Graph> DFS(int);
     void count_area(int, double &, double &, double &, double &);
     friend void merge_graph(Graph &, Graph &, std::string, std::string, double);
-    friend Graph TDM_Cons(TrajectorySet &, double, double, double, double);
+    friend Graph createTG(TrajectorySet &, double, double, double, double);
 };
 
 Graph::Graph(TrajectorySet &t) : WE(t.size()) { V = t; }
