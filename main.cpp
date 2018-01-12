@@ -34,7 +34,7 @@ void fun_run(int k, int s) {
     ALL_T = read_data();
 
     while (ALL_T.size() != 0) {
-        ALL_TEC.push_back(EqualTrack(ALL_T, 100));
+        ALL_TEC.push_back(EqualTrack(ALL_T, 600));
     }
     n_TEC = ALL_TEC.size();
 

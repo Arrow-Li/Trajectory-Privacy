@@ -5,18 +5,17 @@ bool scmp(const Vaw&, const Vaw&);
 
 TrajectorySet EqualTrack(TrajectorySet &T, double tp) { //TODO 等价类构造 范围选取
     TrajectorySet equalT;
-    double s_t1, s_t2, end_t1, end_t2;
+    double startT=0,endT=0;
     std::set<double> timeLine;
-    // tp*=T[0].cod[T[0].length-1].t-T[0].cod[0].t;
-    s_t1 = T[0].cod[0].t - tp;
-    s_t2 = T[0].cod[0].t + tp;
-    end_t1 = T[0].cod[T[0].length - 1].t - tp;
-    end_t2 = T[0].cod[T[0].length - 1].t + tp;
+    for(auto track:T){
+        startT+=track.cod[0].t/T.size();
+        endT+=track.cod[track.length-1].t/T.size();
+    }
     TrajectorySet::iterator it = T.begin();
     while (it != T.end()) {
         int l = (*it).length - 1;
-        if (((*it).cod[0].t >= s_t1 && (*it).cod[0].t <= s_t2) &&
-            ((*it).cod[l].t >= end_t1 && (*it).cod[l].t <= end_t2)) {
+        if (((*it).cod[0].t >= startT-tp && (*it).cod[0].t <= startT+tp) &&
+            ((*it).cod[l].t >= endT-tp && (*it).cod[l].t <= endT+tp)) {
             equalT.push_back(*it);
             for (int i = 0; i <= l; ++i)
                 timeLine.insert((*it).cod[i].t);  //生成时间轴
@@ -24,8 +23,9 @@ TrajectorySet EqualTrack(TrajectorySet &T, double tp) { //TODO 等价类构造 �
         } else
             it++;
     }
-    for (int i = 0; i < equalT.size(); ++i) {
-        equalT[i].syncTrajectory(timeLine);
+    for (auto &et:equalT) {
+        std::cout<<et.id<<std::endl;
+        et.syncTrajectory(timeLine);
     }
     return equalT;
 }

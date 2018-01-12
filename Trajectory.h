@@ -56,7 +56,7 @@ const Trajectory &Trajectory::operator=(const Trajectory &other) {
         if (other.length != 0) {
             this->id = other.id;
             this->length = other.length;
-            this->cod = other.cod;
+            this->cod.assign(other.cod.begin(),other.cod.end());
         }
     }
     return *this;
