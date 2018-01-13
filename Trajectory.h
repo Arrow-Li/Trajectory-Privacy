@@ -116,7 +116,7 @@ void Trajectory::insertNode(unsigned int i, double t) {
     length++;
 }
 
-void Trajectory::syncTrajectory(std::set<double>& timeLine) {
+void Trajectory::syncTrajectory(std::set<double>& timeLine) { //TODO exit code -1073741819 (0xC0000005)
     unsigned int i=0;
     for(auto t:timeLine){
         if(cod[i].t!=t)
