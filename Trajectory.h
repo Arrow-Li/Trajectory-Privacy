@@ -99,27 +99,31 @@ void Trajectory::insertNode(unsigned int i, double t) {
         cod.insert(cod.begin(),newCoord);
     }
     else {
-        if(i>=length) {//插尾部
+        if(i>=length) { //插尾部
+            if(i-2>=length||i-1>=length){
+
+            }
             ratio=(t-cod[i-2].t)/(cod[i-1].t-cod[i-2].t);
             newX=cod[i-2].x+ratio*(cod[i-1].x-cod[i-2].x);
             newY=cod[i-2].y+ratio*(cod[i-1].y-cod[i-2].y);
             newCoord={newX,newY,t};
+            cod.push_back(newCoord);
         }
         else {
             ratio=(t-cod[i-1].t)/(cod[i].t-cod[i-1].t);
             newX=cod[i-1].x+ratio*(cod[i].x-cod[i-1].x);
             newY=cod[i-1].y+ratio*(cod[i].y-cod[i-1].y);
             newCoord={newX,newY,t};
+            cod.insert(cod.begin()+i,newCoord);
         }
-        cod.insert(cod.begin()+i,newCoord);
     }
     length++;
 }
 
-void Trajectory::syncTrajectory(std::set<double>& timeLine) { //TODO exit code -1073741819 (0xC0000005)
+void Trajectory::syncTrajectory(std::set<double>& timeLine) {
     unsigned int i=0;
     for(auto t:timeLine){
-        if(cod[i].t!=t)
+        if(i>=length||cod[i].t!=t)
             insertNode(i,t);
         i++;
     }

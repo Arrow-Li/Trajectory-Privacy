@@ -7,7 +7,7 @@ TrajectorySet EqualTrack(TrajectorySet &T, double tp) { //TODO 等价类构造 �
     TrajectorySet equalT;
     double startT=0,endT=0;
     std::set<double> timeLine;
-    for(auto track:T){
+    for(const auto &track:T){
         startT+=track.cod[0].t/T.size();
         endT+=track.cod[track.length-1].t/T.size();
     }
@@ -23,8 +23,8 @@ TrajectorySet EqualTrack(TrajectorySet &T, double tp) { //TODO 等价类构造 �
         } else
             it++;
     }
-    for (auto &et:equalT) {
-        std::cout<<et.id<<std::endl;
+    for (auto &et:equalT){
+        et.cod.reserve(timeLine.size()); //减少自增长次数
         et.syncTrajectory(timeLine);
     }
     return equalT;
