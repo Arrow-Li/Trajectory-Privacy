@@ -1,30 +1,37 @@
 #include "Graph.h"
-bool same_element(std::string, TrajectorySet&);
-void merge_graph(Graph&, Graph&, std::string, std::string, double);
-bool scmp(const Vaw&, const Vaw&);
+bool same_element(std::string, TrajectorySet &);
+void merge_graph(Graph &, Graph &, std::string, std::string, double);
+bool scmp(const Vaw &, const Vaw &);
 
-TrajectorySet EqualTrack(TrajectorySet &T, double tp) { //TODO 等价类构造 范围选取
+TrajectorySet EqualTrack(TrajectorySet &T) {
     TrajectorySet equalT;
-    double startT=0,endT=0;
+    double tp, startT = 0, endT = 0;
     std::set<double> timeLine;
-    for(const auto &track:T){
-        startT+=track.cod[0].t/T.size();
-        endT+=track.cod[track.length-1].t/T.size();
+    for (const auto &track : T) {
+        startT += track.cod[0].t / T.size();
+        endT += track.cod[track.length - 1].t / T.size();
     }
+    tp = (endT - startT) * 0.04;
+reCreateTimeLine:
     TrajectorySet::iterator it = T.begin();
     while (it != T.end()) {
-        int l = (*it).length - 1;
-        if (((*it).cod[0].t >= startT-tp && (*it).cod[0].t <= startT+tp) &&
-            ((*it).cod[l].t >= endT-tp && (*it).cod[l].t <= endT+tp)) {
+        double coordStartT = (*(*it).cod.begin()).t;
+        double coordEndT = (*((*it).cod.end() - 1)).t;
+        if ((coordStartT >= startT - tp && coordStartT <= startT + tp) &&
+            (coordEndT >= endT - tp && coordEndT <= endT + tp)) {
             equalT.push_back(*it);
-            for (int i = 0; i <= l; ++i)
-                timeLine.insert((*it).cod[i].t);  //生成时间轴
+            for (const auto &coord : (*it).cod)
+                timeLine.insert(coord.t);  //生成时间轴
             T.erase(it);
         } else
             it++;
     }
-    for (auto &et:equalT){
-        et.cod.reserve(timeLine.size()); //减少自增长次数
+    if (equalT.size() < 1) {  //如果等价类数量为0,重新生成时间轴
+        tp *= 2;
+        goto reCreateTimeLine;  // ReSync
+    }
+    for (auto &et : equalT) {
+        et.cod.reserve(timeLine.size());  //减少Vector自增长次数
         et.syncTrajectory(timeLine);
     }
     return equalT;
@@ -72,16 +79,14 @@ Matrix getDisMatrix(TrajectorySet &TEC, double &max, double &min) {
         for (int j = i + 1; j < n; ++j) {
             TDM.setValue(i, i, INF);  //节点自身距离设为无穷大
             TDM.setValue(i, j, getTrackDis(TEC[i], TEC[j]));
-            if (TDM.getValue(i, j) >= max)
-                max = TDM.getValue(i, j);
-            if (TDM.getValue(i, j) <= min)
-                min = TDM.getValue(i, j);
+            if (TDM.getValue(i, j) >= max) max = TDM.getValue(i, j);
+            if (TDM.getValue(i, j) <= min) min = TDM.getValue(i, j);
         }
     }
     return TDM;
 }
 
-bool slcover(Trajectory p, Trajectory q, int s, double lambda, double& cpq) {
+bool slcover(Trajectory p, Trajectory q, int s, double lambda, double &cpq) {
     double xmax, xmin, ymax, ymin;
     int count = 0;
     cpq = getTrackCos(p, q);
@@ -96,7 +101,7 @@ bool slcover(Trajectory p, Trajectory q, int s, double lambda, double& cpq) {
     return count >= s ? true : false;
 }
 
-double EW_Cons(double cpq, int i, int j, Matrix& TDM, double alpha, double beta,
+double EW_Cons(double cpq, int i, int j, Matrix &TDM, double alpha, double beta,
                double max, double min) {
     double w = alpha * (1 - cpq);
     if (max == min)
@@ -115,7 +120,8 @@ Graph createTG(TrajectorySet &TEC, double s, double lambda, double alpha,
     for (int i = 0; i < TG.V.size(); ++i) {
         for (int j = i + 1; j < TG.V.size(); ++j) {
             if (slcover(TG.V[i], TG.V[j], s, lambda, cos_t))
-                TG.insertE(i, j, EW_Cons(cos_t, i, j, TDM, alpha, beta, max, min));
+                TG.insertE(i, j,
+                           EW_Cons(cos_t, i, j, TDM, alpha, beta, max, min));
         }
     }
     return TG;
@@ -133,7 +139,7 @@ double AnonyTrack(double &IL, TrajectorySet &TEC, int k, double s,
     for (int i = 0; i < G.size(); ++i)
         tag[i] = G[i].countV() > k ? true : false;
     //隐匿End
-    Graph* TG_copy = new Graph(TG);
+    Graph *TG_copy = new Graph(TG);
     while (TG.countV() > 0) {
         for (int i = 0; i < G.size(); ++i) {
             if (!tag[i] && uc) {  //跳过规模小于k的连通分量
@@ -260,14 +266,14 @@ double AnonyTrack(double &IL, TrajectorySet &TEC, int k, double s,
     return TSR;
 }
 
-bool same_element(std::string id, TrajectorySet& v) {
+bool same_element(std::string id, TrajectorySet &v) {
     for (int i = 0; i < v.size(); ++i) {
         if (id == v[i].getId()) return true;
     }
     return false;
 }
 
-void merge_graph(Graph& G1, Graph& G2, std::string id, std::string id_connect,
+void merge_graph(Graph &G1, Graph &G2, std::string id, std::string id_connect,
                  double w) {
     // G1合并到G2
     G2.V.insert(G2.V.end(), G1.V.begin(), G1.V.end());
@@ -275,7 +281,7 @@ void merge_graph(Graph& G1, Graph& G2, std::string id, std::string id_connect,
     return;
 }
 
-bool scmp(const Vaw& v1, const Vaw& v2) {
+bool scmp(const Vaw &v1, const Vaw &v2) {
     if (v1.weight < v2.weight) return true;
     return false;
 }

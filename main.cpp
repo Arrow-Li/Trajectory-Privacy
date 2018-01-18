@@ -34,7 +34,7 @@ void fun_run(int k, int s) {
     ALL_T = read_data();
 
     while (ALL_T.size() != 0) {
-        ALL_TEC.push_back(EqualTrack(ALL_T, 600));
+        ALL_TEC.push_back(EqualTrack(ALL_T));
     }
     n_TEC = ALL_TEC.size();
 
@@ -73,11 +73,11 @@ TrajectorySet read_data() {
     Coord temp_pos;
     // f.open(DATA_LIST,ios::in);
     // f.open(TEST_LIST,ios::in);
-    f.open(TEST_WIN, ios::in);
+    f.open(TEST_LIST, ios::in);
     while (!f.eof()) {  //读取出租车列表
         f >> id >> length;
-        // path=DATA_PATH+id+".txt";
-        path = DATA_WIN + id + ".txt";
+        path=DATA_PATH+id+".txt";
+        // path = DATA_WIN + id + ".txt";
         f_c.open(path, ios::in);
         for (int i = 0; i < length; ++i) {  //读取每个出租车的轨迹
             f_c >> temp_pos.x >> temp_pos.y >> skip >>

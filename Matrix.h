@@ -1,7 +1,7 @@
 #include <iostream>
 #define INF 0x3f3f3f3f
 
-class Matrix {
+class Matrix { // 下三角存储
     int n, length;
     double *mat;
 
