@@ -38,25 +38,24 @@ reCreateTimeLine:
 }
 
 double getTrackCos(Trajectory p, Trajectory q) {
-    int ignore = 1;
-    double cos_value = 0;
+    int ignore = 0;
+    double cosValue = 0;
     for (int i = 0; i < p.length - 1; ++i) {
-        double tmp0 =
-            (p.cod[i + 1].x - p.cod[i].x) * (q.cod[i + 1].x - q.cod[i].x);
-        tmp0 += (p.cod[i + 1].y - p.cod[i].y) * (q.cod[i + 1].y - q.cod[i].y);
-        double tmp1 = sqrt(pow((p.cod[i + 1].x - p.cod[i].x), 2) +
-                           pow((p.cod[i + 1].y - p.cod[i].y), 2));
-        tmp1 *= sqrt(pow((q.cod[i + 1].x - q.cod[i].x), 2) +
-                     pow((q.cod[i + 1].y - q.cod[i].y), 2));
-        if (tmp0 == 0 || tmp1 == 0) {  //忽略时间间隔内未移动的点
+        double num =
+            (p.cod[i + 1].x - p.cod[i].x) * (q.cod[i + 1].x - q.cod[i].x) +
+            (p.cod[i + 1].y - p.cod[i].y) * (q.cod[i + 1].y - q.cod[i].y);
+        double denom = sqrt(pow((p.cod[i + 1].x - p.cod[i].x), 2) +
+                            pow((p.cod[i + 1].y - p.cod[i].y), 2)) *
+                       sqrt(pow((q.cod[i + 1].x - q.cod[i].x), 2) +
+                            pow((q.cod[i + 1].y - q.cod[i].y), 2));
+        if (num == 0 || denom == 0) {  //忽略时间间隔内未移动的点
             ignore++;
             continue;
         }
-        cos_value +=
-            fabs(tmp0 / tmp1);  // cos要取绝对值？ 两个线段夹角在0到90度
+        cosValue += fabs(num / denom);  //cos要取绝对值？ 两个线段夹角在0到90度
     }
-    cos_value /= p.length - ignore;
-    return cos_value;
+    cosValue /= p.length - ignore;
+    return cosValue;
 }
 
 double getTrackDis(Trajectory p, Trajectory q) {
@@ -77,7 +76,6 @@ Matrix getDisMatrix(TrajectorySet &TEC, double &max, double &min) {
     min = INF;
     for (int i = 0; i < n; ++i) {
         for (int j = i + 1; j < n; ++j) {
-            TDM.setValue(i, i, INF);  //节点自身距离设为无穷大
             TDM.setValue(i, j, getTrackDis(TEC[i], TEC[j]));
             if (TDM.getValue(i, j) >= max) max = TDM.getValue(i, j);
             if (TDM.getValue(i, j) <= min) min = TDM.getValue(i, j);
@@ -86,16 +84,16 @@ Matrix getDisMatrix(TrajectorySet &TEC, double &max, double &min) {
     return TDM;
 }
 
-bool slcover(Trajectory p, Trajectory q, int s, double lambda, double &cpq) {
-    double xmax, xmin, ymax, ymin;
+bool slCover(Trajectory p, Trajectory q, int s, double lambda, double &cpq) {
+    double xMax, xMin, yMax, yMin;
     int count = 0;
-    cpq = getTrackCos(p, q);
+    cpq = getTrackCos(p, q); //cos(x) 弧度
     if (cpq < cos(lambda) || cpq > 1) return false;
-    q.areaTrack(xmin, xmax, ymin, ymax);
-    for (int i = 0; i < p.length; ++i) {
+    q.areaTrack(xMin, xMax, yMin, yMax);
+    for (const auto & coord : p.cod) {
         if (count >= s) return true;
-        if ((p.cod[i].x >= xmin && p.cod[i].x <= xmax) ||
-            (p.cod[i].y >= ymin && p.cod[i].y <= ymax))  //并还是或?
+        if ((coord.x >= xMin && coord.x <= xMax) ||
+            (coord.y >= yMin && coord.y <= yMax))
             count++;
     }
     return count >= s ? true : false;
@@ -115,13 +113,13 @@ double EW_Cons(double cpq, int i, int j, Matrix &TDM, double alpha, double beta,
 Graph createTG(TrajectorySet &TEC, double s, double lambda, double alpha,
                double beta) {  //如何随机？
     Graph TG(TEC);
-    double max, min, cos_t, length = TEC[0].getLength();
-    Matrix TDM(getDisMatrix(TEC, max, min));
+    double trackDisMax, trackDisMin, trackCos;
+    Matrix TDM(getDisMatrix(TEC, trackDisMax, trackDisMin));
     for (int i = 0; i < TG.V.size(); ++i) {
         for (int j = i + 1; j < TG.V.size(); ++j) {
-            if (slcover(TG.V[i], TG.V[j], s, lambda, cos_t))
+            if (slCover(TG.V[i], TG.V[j], s, lambda, trackCos))
                 TG.insertE(i, j,
-                           EW_Cons(cos_t, i, j, TDM, alpha, beta, max, min));
+                           EW_Cons(trackCos, i, j, TDM, alpha, beta, trackDisMax, trackDisMin));
         }
     }
     return TG;
@@ -129,10 +127,15 @@ Graph createTG(TrajectorySet &TEC, double s, double lambda, double alpha,
 
 double AnonyTrack(double &IL, TrajectorySet &TEC, int k, double s,
                   double lambda, double alpha, double beta, int &ti) {
+    clock_t abc = clock();
+
     Graph TG(createTG(TEC, s, lambda, alpha, beta)), *V;
     std::vector<Graph> G(TG.DFS(0)), S;
     std::vector<Vaw> W;
     double n_TEC = TEC.size(), TSR = 0;
+
+    std::cout<<(clock()-abc)/CLOCKS_PER_SEC<<"s 等价类生成图 dfs"<<std::endl;
+
     //隐匿Size<k的连通分量
     bool tag[G.size()], uc = true;
     memset(tag, true, sizeof(tag));

@@ -36,7 +36,7 @@ class Trajectory {
     friend std::vector<Trajectory> EqualTrack(std::vector<Trajectory> &);
     friend double getTrackDis(Trajectory, Trajectory);
     friend double getTrackCos(Trajectory, Trajectory);
-    friend bool slcover(Trajectory, Trajectory, int, double, double &);
+    friend bool slCover(Trajectory, Trajectory, int, double, double &);
 };
 
 Trajectory::Trajectory() {
@@ -80,11 +80,11 @@ void Trajectory::areaTrack(double &xmin, double &xmax, double &ymin,
     xmax = cod[0].x;
     ymin = cod[0].y;
     ymax = cod[0].y;
-    for (int i = 0; i < length; ++i) {
-        if (cod[i].x <= xmin) xmin = cod[i].x;
-        if (cod[i].x >= xmax) xmax = cod[i].x;
-        if (cod[i].y <= ymin) ymin = cod[i].y;
-        if (cod[i].y >= ymax) ymax = cod[i].y;
+    for (const auto & coord : cod) {
+        if (coord.x <= xmin) xmin = coord.x;
+        if (coord.x >= xmax) xmax = coord.x;
+        if (coord.y <= ymin) ymin = coord.y;
+        if (coord.y >= ymax) ymax = coord.y;
     }
 }
 

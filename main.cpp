@@ -55,7 +55,8 @@ void fun_run(int k, int s) {
             n_TEC--;
             continue;
         }
-        //等价类规模过小 隐匿率100%怎么办
+        /* 等价类规模过小:D1 is dropped since it does not satisfy the 3-anonymity requirement.
+        V1,V2 and V3 are trajectory k-anonymity sets with k=3. */
         TSR += AnonyTrack(IL, TEC, k, s, 0.9, 0.3, 0.7, ti);  // 0.837758
     }
     cout << "IL=" << IL / (n_TEC * AREA) * 100 << "%,";
