@@ -3,7 +3,6 @@
 #include <algorithm>
 #include "Matrix.h"
 #include "Trajectory.h"
-#define TrajectorySet std::vector<Trajectory>
 
 class Graph {
     TrajectorySet V;

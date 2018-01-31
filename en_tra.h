@@ -1,4 +1,5 @@
 #include "Graph.h"
+#include "Anonymous.h"
 bool same_element(std::string, TrajectorySet &);
 void merge_graph(Graph &, Graph &, std::string, std::string, double);
 bool scmp(const Vaw &, const Vaw &);
@@ -11,7 +12,7 @@ TrajectorySet EqualTrack(TrajectorySet &T) {
         startT += track.cod[0].t / T.size();
         endT += track.cod[track.length - 1].t / T.size();
     }
-    tp = (endT - startT) * 0.04;
+    tp = (endT - startT) * 0.04;  //TODO 范围约束参数
 reCreateTimeLine:
     TrajectorySet::iterator it = T.begin();
     while (it != T.end()) {
@@ -27,7 +28,7 @@ reCreateTimeLine:
             it++;
     }
     if (equalT.size() < 1) {  //如果等价类数量为0,重新生成时间轴
-        tp *= 2;
+        tp *= 2;  //TODO 范围增长参数
         goto reCreateTimeLine;  // ReSync
     }
     for (auto &et : equalT) {
@@ -125,17 +126,13 @@ Graph createTG(TrajectorySet &TEC, double s, double lambda, double alpha,
     return TG;
 }
 
-double AnonyTrack(double &IL, TrajectorySet &TEC, int k, double s,
+double AnonyTrack(double &InfoLoss, TrajectorySet &TEC, int k, double s,
                   double lambda, double alpha, double beta, int &ti) {
-    clock_t abc = clock();
-
     Graph TG(createTG(TEC, s, lambda, alpha, beta)), *V;
+    std::vector<AnonyArea> AnonyTrackSet;
     std::vector<Graph> G(TG.DFS(0)), S;
     std::vector<Vaw> W;
     double n_TEC = TEC.size(), TSR = 0;
-
-    std::cout<<(clock()-abc)/CLOCKS_PER_SEC<<"s 等价类生成图 dfs"<<std::endl;
-
     //隐匿Size<k的连通分量
     bool tag[G.size()], uc = true;
     memset(tag, true, sizeof(tag));
@@ -152,7 +149,7 @@ double AnonyTrack(double &IL, TrajectorySet &TEC, int k, double s,
             if (G[i].countV() >= k) {
                 Trajectory v1, v2;
                 double min_e =
-                    G[i].minE(v1, v2);  //在 TG还是G[i]? 中寻找权最小的边(v1,v2)
+                    G[i].minE(v1, v2);  //TODO 在TG还是G[i]?中寻找权最小的边(v1,v2)
                 if (v1.getLength() == 0 && v2.getLength() == 0) {
                     std::vector<Graph> UCG = G[i].DFS(0);
                     G.erase(G.begin() + i);
@@ -250,19 +247,18 @@ double AnonyTrack(double &IL, TrajectorySet &TEC, int k, double s,
     }
     delete TG_copy;
     // TODO 信息损失
-    // TODO IL+=XXX
-    // IL
+    // TODO InfoLoss+=XXX
+    // InfoLoss
     if (S.size() == 0) {
         ti++;
         return 1;
     }
-    double x_max = S[0].getV(0).getCoord(ti % S[0].getV(0).getLength()).x,
-           x_min = x_max,
-           y_max = S[0].getV(0).getCoord(ti % S[0].getV(0).getLength()).y,
-           y_min = y_max;
-    for (auto g : S) g.count_area(ti, x_max, x_min, y_max, y_min);
+    for(auto anonyArea:S) // 生成轨迹匿名域集合
+        AnonyTrackSet.push_back(AnonyArea(anonyArea.getT()));
+    S.clear();
     ti++;
-    IL += ((x_max - x_min) * (y_max - y_min));
+    for(auto anonySet:AnonyTrackSet)
+        InfoLoss+=anonySet.countArea();
     // TSR
     for (auto i : S) TSR += i.countV();
     TSR = (n_TEC - TSR) / n_TEC;

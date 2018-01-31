@@ -1,6 +1,10 @@
+#ifndef _TRAJECTORY_H
+#define _TRAJECTORY_H
+
 #include <set>
 #include <string>
 #include <vector>
+#define TrajectorySet std::vector<Trajectory>
 
 struct Coord {
     double x, y, t;
@@ -124,3 +128,5 @@ void Trajectory::syncTrajectory(std::set<double> &timeLine) {
         i++;
     }
 }
+
+#endif //_TRAJECTORY_H
