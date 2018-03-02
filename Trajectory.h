@@ -33,10 +33,10 @@ class Trajectory {
     std::string getId();
     Coord getCoord(int);
     unsigned int getLength();
-    void insertNode(unsigned int, double);
-    void syncTrajectory(std::set<double> &);
+    void insertNode(unsigned int, double, Coord *);
+    void generateNode(std::vector<Coord> *, Coord *, Coord *, unsigned int &);
+    void syncTrajectory(unsigned int &, unsigned int &, int);
     void areaTrack(double &, double &, double &, double &);
-    friend void write_data(std::vector<Trajectory> &);  // TODO temp
     friend std::vector<Trajectory> EqualTrack(std::vector<Trajectory> &);
     friend double getTrackDis(Trajectory, Trajectory);
     friend double getTrackCos(Trajectory, Trajectory);
@@ -84,7 +84,7 @@ void Trajectory::areaTrack(double &xmin, double &xmax, double &ymin,
     xmax = cod[0].x;
     ymin = cod[0].y;
     ymax = cod[0].y;
-    for (const auto & coord : cod) {
+    for (const auto &coord : cod) {
         if (coord.x <= xmin) xmin = coord.x;
         if (coord.x >= xmax) xmax = coord.x;
         if (coord.y <= ymin) ymin = coord.y;
@@ -92,19 +92,17 @@ void Trajectory::areaTrack(double &xmin, double &xmax, double &ymin,
     }
 }
 
-void Trajectory::insertNode(unsigned int i, double t) {
+void Trajectory::insertNode(unsigned int i, double t, Coord *c = NULL) {
     double newX, newY, ratio;
     Coord newCoord;
     if (i == 0) {  //插头结点
-        ratio = (t - cod[i].t) / (cod[i + 1].t - cod[i].t);
-        newX = cod[i].x + ratio * (cod[i + 1].x - cod[i].x);
-        newY = cod[i].y + ratio * (cod[i + 1].y - cod[i].y);
+        ratio = (t - c->t) / (cod[i].t - c->t);
+        newX = c->x + ratio * (cod[i].x - c->x);
+        newY = c->y + ratio * (cod[i].y - c->y);
         newCoord = {newX, newY, t};
-        cod.insert(cod.begin(), newCoord);
+        cod.insert(cod.begin() + i, newCoord);
     } else {
         if (i >= length) {  //插尾部
-            if (i - 2 >= length || i - 1 >= length) {
-            }
             ratio = (t - cod[i - 2].t) / (cod[i - 1].t - cod[i - 2].t);
             newX = cod[i - 2].x + ratio * (cod[i - 1].x - cod[i - 2].x);
             newY = cod[i - 2].y + ratio * (cod[i - 1].y - cod[i - 2].y);
@@ -121,12 +119,44 @@ void Trajectory::insertNode(unsigned int i, double t) {
     length++;
 }
 
-void Trajectory::syncTrajectory(std::set<double> &timeLine) {
-    unsigned int i = 0;
-    for (auto t : timeLine) {
-        if (i >= length || cod[i].t != t) insertNode(i, t);
-        i++;
+void Trajectory::generateNode(std::vector<Coord> *newCod, Coord *front, Coord *back, unsigned int &t) {
+    double newX, newY, ratio;
+    Coord newCoord;
+    if (t < front->t) {  // 两点之前
+        ratio = (front->t - t) / (back->t - t);
+        newX = (front->x - ratio * back->x) / (1 - ratio);
+        newY = (front->y - ratio * back->y) / (1 - ratio);
     }
+    if (t > back->t) {  // 两点之后
+        ratio = (back->t - front->t) / (t - front->t);
+        newX = (back->x + (ratio - 1) * front->x) / ratio;
+        newY = (back->y + (ratio - 1) * front->y) / ratio;
+    } else {  // 两点之间
+        ratio = (t - front->t) / (back->t - front->t);
+        newX = front->x + ratio * (back->x - front->x);
+        newY = front->y + ratio * (back->y - front->y);
+    }
+    newCoord = {newX, newY, (double)t};
+    newCod->push_back(newCoord);
 }
 
-#endif //_TRAJECTORY_H
+void Trajectory::syncTrajectory(unsigned int &startT, unsigned int &endT, int gap) {
+    std::vector<Coord> newCod;
+    unsigned int i = 0;
+
+    for (unsigned int timeLine = startT; timeLine <= endT; timeLine += gap) {
+        while (i < this->length) {
+            if (timeLine < cod[i].t) break;
+            i++;
+        }
+        if (i == 0)
+            generateNode(&newCod, &cod[0], &cod[1], timeLine);
+        else
+            generateNode(&newCod, &cod[i - 1], &cod[i], timeLine);
+    }
+    newCod.swap(this->cod);
+    std::vector<Coord>().swap(newCod);
+    this->length = (unsigned int)cod.size();
+}
+
+#endif  //_TRAJECTORY_H

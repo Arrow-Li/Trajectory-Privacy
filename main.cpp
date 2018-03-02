@@ -1,41 +1,45 @@
 #include <time.h>
 #include <fstream>
 #include <iomanip>
+#include <sstream>
 #include "en_tra.h"
-#define DATA_LIST "/Volumes/Macintosh HD 2/Documents/data/list.txt"
-#define DATA_PATH "/Volumes/Macintosh HD 2/Documents/Work/test_data/new_"
+#define DATA_LIST "/Volumes/Macintosh HD 2/Documents/Work/new_data/list.txt"
+#define DATA_PATH "/Volumes/Macintosh HD 2/Documents/Work/new_data/new_"
+#define DATA_OUT "/Volumes/Macintosh HD 2/Documents/Trajectory-Privacy/out/"
 #define DATA_WIN "C:\\Users\\Jeep Li\\Documents\\Cprogram\\Work\\test_data\\new_"
 #define TEST_WIN "C:\\Users\\Jeep Li\\Documents\\Cprogram\\Work\\test_data\\list.txt"
 #define TEST_LIST "/Volumes/Macintosh HD 2/Documents/Work/test_data/list.txt"
+#define TEST_PATH "/Volumes/Macintosh HD 2/Documents/Work/test_data/new_"
 using namespace std;
 
 double AREA;
-TrajectorySet read_data();
-void fun_run(int, int);
-void write_data(TrajectorySet &);
+
+void test(int, int);
+TrajectorySet readData();
+void writeData(Trajectory &);
 
 int main() {
     for (int i = 4; i <= 10; i++) {
         clock_t begin;
         double used_time;
         begin = clock();
-        fun_run(i, 5);
+        test(i, 5);
         AREA = 0;
         used_time = (double)(clock() - begin) / CLOCKS_PER_SEC;
         cout << used_time << "s" << endl;
     }
 }
 
-void fun_run(int k, int s) {
+void test(int k, int s) {
     int ti = 0, n_TEC = 0;
     double IL = 0, TSR = 0;
     TrajectorySet ALL_T;
     vector<TrajectorySet> ALL_TEC;
-    ALL_T = read_data();
-
+    ALL_T = readData();
     while (ALL_T.size() != 0) {
         ALL_TEC.push_back(EqualTrack(ALL_T));
     }
+    writeData(ALL_TEC[0][0]);
     n_TEC = ALL_TEC.size();
 
     /*
@@ -55,67 +59,53 @@ void fun_run(int k, int s) {
             n_TEC--;
             continue;
         }
-        /* 等价类规模过小:D1 is dropped since it does not satisfy the 3-anonymity requirement.
-        V1,V2 and V3 are trajectory k-anonymity sets with k=3. */
+        /* 等价类规模过小:D1 is dropped since it does not satisfy the
+        3-anonymity requirement. V1,V2 and V3 are trajectory k-anonymity
+        sets with k=3. */
+
+        clock_t o1=clock();
         TSR += AnonyTrack(IL, TEC, k, s, 0.9, 0.3, 0.7, ti);  // 0.837758
+        cout<<(double)(clock()-o1)/CLOCKS_PER_SEC<<endl;
     }
     cout << "IL=" << IL / (n_TEC * AREA) * 100 << "%,";
     cout << "TSR=" << TSR / n_TEC * 100 << "%" << endl;
 }
 
-TrajectorySet read_data() {
-    int length, skip;
-    bool fb = true;
-    double x_max, x_min, y_max, y_min;
+TrajectorySet readData() {  //换用FILE提高速度
+    int length;
+    Coord tempCod;
     string id, path;
-    fstream f, f_c;
-    TrajectorySet all_t;
-    vector<Coord> temp_t;
-    Coord temp_pos;
-    // f.open(DATA_LIST,ios::in);
-    // f.open(TEST_LIST,ios::in);
-    f.open(TEST_LIST, ios::in);
-    while (!f.eof()) {  //读取出租车列表
-        f >> id >> length;
-        path=DATA_PATH+id+".txt";
-        // path = DATA_WIN + id + ".txt";
-        f_c.open(path, ios::in);
+    FILE *fData;
+    fstream fList;
+    vector<Coord> tempCodSet;
+    TrajectorySet TrackData;
+    fList.open(DATA_LIST, ios::in);
+    while (!fList.eof()) {  //读取出租车列表
+        fList >> id >> length;
+        path = DATA_PATH + id + ".txt";
+        fData = fopen(path.c_str(), "r");
+        tempCodSet.reserve((unsigned long)length);
         for (int i = 0; i < length; ++i) {  //读取每个出租车的轨迹
-            f_c >> temp_pos.x >> temp_pos.y >> skip >>
-                temp_pos.t;  //纬度，经度，是否有乘客(无用)，时间(UNIX时间戳)
-            temp_t.push_back(temp_pos);
-            if (fb) {
-                x_max = temp_pos.x;
-                x_min = x_max;
-                y_max = temp_pos.y;
-                y_min = y_max;
-                fb = false;
-            }
-            x_max = (temp_pos.x > x_max) ? temp_pos.x : x_max;
-            x_min = (temp_pos.x < x_min) ? temp_pos.x : x_min;
-            y_max = (temp_pos.y > y_max) ? temp_pos.y : y_max;
-            y_min = (temp_pos.y < y_min) ? temp_pos.y : y_min;
+            fscanf(fData, "%lf %lf %lf", &tempCod.x, &tempCod.y,
+                   &tempCod.t);  //纬度, 经度, 时间(UNIX时间戳)
+            tempCodSet.push_back(tempCod);
         }
-        reverse(temp_t.begin(), temp_t.end());
-        Trajectory t(id, temp_t);
-        all_t.push_back(t);
-        temp_t.clear();
-        f_c.close();
+        reverse(tempCodSet.begin(), tempCodSet.end());
+        TrackData.push_back(Trajectory(id, tempCodSet));
+        vector<Coord>().swap(tempCodSet), id.clear(), path.clear();
+        fclose(fData);
     }
-    AREA = (x_max - x_min) * (y_max - y_min);
-    f.close();
-    return all_t;
+    fList.close();
+    return TrackData;
 }
 
-void write_data(TrajectorySet &t) {  //格式化输出测试数据,方便导入Excel
+void writeData(Trajectory &t) {  //格式化输出测试数据,便于可视化
+    // TODO temp
     fstream f;
-    string path = "";
-    path = DATA_PATH + path + "one.out";
-    f.open(path, ios::out);
-    for (auto i : t) {
-        for (auto point : i.cod) {
-            f << i.getId() << "," << point.x << "," << point.y << ","
-              << setprecision(10) << point.t << endl;
-        }
+    f.open(string(DATA_OUT) + t.getId() + ".out", ios::out);
+    f << "lat,lon" << endl;
+    for (int i = 0; i < t.getLength(); ++i) {
+        Coord temp = t.getCoord(i);
+        f << setprecision(10) << temp.x << "," << temp.y << endl;
     }
 }

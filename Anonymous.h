@@ -1,4 +1,5 @@
 #include "Trajectory.h"
+#define INF 0x3f3f3f3f
 
 struct Area { // 节点的匿名域
     double xMin, xMax, yMin, yMax, t;
@@ -13,6 +14,8 @@ class AnonyArea {
    public:
     AnonyArea(int);
     AnonyArea(TrajectorySet);
+    Area getArea(int);
+    int getLength();
     double countArea();
 };
 
@@ -47,8 +50,18 @@ AnonyArea::AnonyArea(std::vector<Trajectory> T) {
 }
 
 double AnonyArea::countArea() { //TODO 考虑匿名域重叠!
-    double count=0;
-    for(const auto& ar:this->area)
-        count+=(ar.xMax-ar.xMin)*(ar.yMax-ar.yMin);
+    double count=0,x1=-INF,x2=INF,y1=-INF,y2=INF;
+    for(const auto& ar:this->area) {
+        double temp=(ar.xMax - ar.xMin) * (ar.yMax - ar.yMin);
+        count += temp;
+    }
     return count;
+}
+
+Area AnonyArea::getArea(int i) {
+    return area[i];
+}
+
+int AnonyArea::getLength() {
+    return length;
 }

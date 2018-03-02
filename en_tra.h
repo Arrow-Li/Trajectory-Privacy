@@ -1,39 +1,56 @@
-#include "Graph.h"
 #include "Anonymous.h"
+#include "Graph.h"
+#include "iomanip"
+
+time_t noSec(time_t, bool);
+void eraseFast(TrajectorySet &, std::string);
 bool same_element(std::string, TrajectorySet &);
 void merge_graph(Graph &, Graph &, std::string, std::string, double);
 bool scmp(const Vaw &, const Vaw &);
 
 TrajectorySet EqualTrack(TrajectorySet &T) {
     TrajectorySet equalT;
-    double tp, startT = 0, endT = 0;
-    std::set<double> timeLine;
+    time_t startT = (time_t)T[0].cod[0].t,
+           endT = (time_t)T[0].cod[T[0].length - 1].t, minStartT = 0,
+           maxEndT = 0;
+    double tp = ((endT - startT) * 0.05);  // TODO 范围约束参数
+    //std::set<double> timeLine;
+    /*
     for (const auto &track : T) {
         startT += track.cod[0].t / T.size();
         endT += track.cod[track.length - 1].t / T.size();
     }
-    tp = (endT - startT) * 0.04;  //TODO 范围约束参数
+     */
+    // TODO 等价类划分 修改
 reCreateTimeLine:
     TrajectorySet::iterator it = T.begin();
     while (it != T.end()) {
-        double coordStartT = (*(*it).cod.begin()).t;
-        double coordEndT = (*((*it).cod.end() - 1)).t;
+        time_t coordStartT = (time_t)(*(*it).cod.begin()).t;
+        time_t coordEndT = (time_t)(*((*it).cod.end() - 1)).t;
         if ((coordStartT >= startT - tp && coordStartT <= startT + tp) &&
             (coordEndT >= endT - tp && coordEndT <= endT + tp)) {
+            if (coordStartT < minStartT || minStartT == 0)
+                minStartT = coordStartT;
+            if (coordEndT > maxEndT) maxEndT = coordEndT;
             equalT.push_back(*it);
-            for (const auto &coord : (*it).cod)
-                timeLine.insert(coord.t);  //生成时间轴
-            T.erase(it);
+            eraseFast(T, (*it).id);
         } else
-            it++;
+            ++it;
     }
-    if (equalT.size() < 1) {  //如果等价类数量为0,重新生成时间轴
-        tp *= 2;  //TODO 范围增长参数
+    if (equalT.size() < 1) {    //如果等价类数量为0,重新生成时间轴
+        tp *= 1.2;              // TODO 范围增长参数
         goto reCreateTimeLine;  // ReSync
     }
+    if (equalT.size() == 1) return equalT;
+    minStartT = noSec(minStartT, true);  // 时间轴头尾取整
+    maxEndT = noSec(maxEndT, false);
+    // timeLine.erase(++timeLine.find(maxEndT), timeLine.end());  // 精简时间轴
+    // timeLine.erase(timeLine.begin(), timeLine.find(minStartT));
     for (auto &et : equalT) {
-        et.cod.reserve(timeLine.size());  //减少Vector自增长次数
-        et.syncTrajectory(timeLine);
+        et.cod.reserve((unsigned long)(maxEndT - minStartT) / 30 +
+                       1);  //减少Vector自增长次数
+        et.syncTrajectory((unsigned int &)minStartT, (unsigned int &)maxEndT,
+                          30);
     }
     return equalT;
 }
@@ -53,7 +70,7 @@ double getTrackCos(Trajectory p, Trajectory q) {
             ignore++;
             continue;
         }
-        cosValue += fabs(num / denom);  //cos要取绝对值？ 两个线段夹角在0到90度
+        cosValue += fabs(num / denom);  // cos要取绝对值？ 两个线段夹角在0到90度
     }
     cosValue /= p.length - ignore;
     return cosValue;
@@ -88,10 +105,10 @@ Matrix getDisMatrix(TrajectorySet &TEC, double &max, double &min) {
 bool slCover(Trajectory p, Trajectory q, int s, double lambda, double &cpq) {
     double xMax, xMin, yMax, yMin;
     int count = 0;
-    cpq = getTrackCos(p, q); //cos(x) 弧度
+    cpq = getTrackCos(p, q);  // cos(x) 弧度
     if (cpq < cos(lambda) || cpq > 1) return false;
     q.areaTrack(xMin, xMax, yMin, yMax);
-    for (const auto & coord : p.cod) {
+    for (const auto &coord : p.cod) {
         if (count >= s) return true;
         if ((coord.x >= xMin && coord.x <= xMax) ||
             (coord.y >= yMin && coord.y <= yMax))
@@ -120,7 +137,8 @@ Graph createTG(TrajectorySet &TEC, double s, double lambda, double alpha,
         for (int j = i + 1; j < TG.V.size(); ++j) {
             if (slCover(TG.V[i], TG.V[j], s, lambda, trackCos))
                 TG.insertE(i, j,
-                           EW_Cons(trackCos, i, j, TDM, alpha, beta, trackDisMax, trackDisMin));
+                           EW_Cons(trackCos, i, j, TDM, alpha, beta,
+                                   trackDisMax, trackDisMin));
         }
     }
     return TG;
@@ -148,8 +166,8 @@ double AnonyTrack(double &InfoLoss, TrajectorySet &TEC, int k, double s,
             }
             if (G[i].countV() >= k) {
                 Trajectory v1, v2;
-                double min_e =
-                    G[i].minE(v1, v2);  //TODO 在TG还是G[i]?中寻找权最小的边(v1,v2)
+                double min_e = G[i].minE(
+                    v1, v2);  // TODO 在TG还是G[i]?中寻找权最小的边(v1,v2)
                 if (v1.getLength() == 0 && v2.getLength() == 0) {
                     std::vector<Graph> UCG = G[i].DFS(0);
                     G.erase(G.begin() + i);
@@ -220,7 +238,7 @@ double AnonyTrack(double &InfoLoss, TrajectorySet &TEC, int k, double s,
     std::vector<Graph>::iterator it = S.begin();
     while (it != S.end()) {  // k-匿名集轨迹数目<k
         if ((*it).countV() >= k) {
-            it++;
+            ++it;
             continue;
         }
         double cost = INF;
@@ -253,16 +271,47 @@ double AnonyTrack(double &InfoLoss, TrajectorySet &TEC, int k, double s,
         ti++;
         return 1;
     }
-    for(auto anonyArea:S) // 生成轨迹匿名域集合
+    for (auto anonyArea : S)  // 生成轨迹匿名域集合
         AnonyTrackSet.push_back(AnonyArea(anonyArea.getT()));
+
+    std::fstream ft;
+    ft.open("/Volumes/Macintosh HD 2/Documents/Work/area.txt", std::ios::out);
+    Trajectory ttx(S[0].getT()[2]);
+    for (int i = 0; i < ttx.getLength(); i++) {
+        Coord xtt = ttx.getCoord(i);
+        ft << std::fixed << std::setprecision(12) << xtt.x << "\t" << xtt.y
+           << std::endl;
+    }
+    ft.close();
     S.clear();
     ti++;
-    for(auto anonySet:AnonyTrackSet)
-        InfoLoss+=anonySet.countArea();
+    for (auto anonySet : AnonyTrackSet) {
+        double tt = anonySet.countArea();
+        InfoLoss += tt;
+    }
     // TSR
     for (auto i : S) TSR += i.countV();
     TSR = (n_TEC - TSR) / n_TEC;
     return TSR;
+}
+
+time_t noSec(time_t t, bool f) {
+    tm *date = localtime(&t);
+    if (date->tm_sec == 0) return t;
+    date->tm_sec = 0;
+    if (f) date->tm_min += 1;
+    t = mktime(date);
+    return t;
+}
+
+void eraseFast(TrajectorySet &T, std::string id){ //快速删除vector
+    for(int i=0; i<T.size(); ++i){
+        if(T[i].getId()==id){
+            std::swap(T[i], T[T.size()-1]);
+            T.pop_back();
+            break;
+        }
+    }
 }
 
 bool same_element(std::string id, TrajectorySet &v) {

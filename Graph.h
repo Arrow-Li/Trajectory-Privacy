@@ -29,7 +29,6 @@ class Graph {
     int next(int, int);
     Graph create_child(std::vector<int>);
     std::vector<Graph> DFS(int);
-    void count_area(int, double &, double &, double &, double &);
     friend void merge_graph(Graph &, Graph &, std::string, std::string, double);
     friend Graph createTG(TrajectorySet &, double, double, double, double);
 };
@@ -164,19 +163,6 @@ double Graph::compare(Graph G1, Graph G2, std::string &id,
         }
     }
     return min_w;
-}
-
-void Graph::count_area(int t, double &x_max, double &x_min, double &y_max,
-                       double &y_min) {
-    // TODO 计算匿名域面积
-    for (int j = 0; j < this->countV(); ++j) {
-        t %= this->V[j].getLength();
-        x_min = (this->V[j].getCoord(t).x < x_min) ? this->V[j].getCoord(t).x : x_min;
-        x_max = (this->V[j].getCoord(t).x > x_max) ? this->V[j].getCoord(t).x : x_max;
-        y_min = (this->V[j].getCoord(t).y < y_min) ? this->V[j].getCoord(t).y : y_min;
-        y_max = (this->V[j].getCoord(t).y > y_max) ? this->V[j].getCoord(t).y : y_max;
-    }
-    return;
 }
 
 /*
