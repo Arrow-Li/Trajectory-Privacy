@@ -17,6 +17,7 @@ class AnonyArea {
     Area getArea(int);
     int getLength();
     double countArea();
+    std::string* getID();
 };
 
 AnonyArea::AnonyArea(int k) {
@@ -64,4 +65,8 @@ Area AnonyArea::getArea(int i) {
 
 int AnonyArea::getLength() {
     return length;
+}
+
+std::string *AnonyArea::getID() {
+    return id;
 }

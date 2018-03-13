@@ -6,10 +6,8 @@
 #define DATA_LIST "/Volumes/Macintosh HD 2/Documents/Work/new_data/list.txt"
 #define DATA_PATH "/Volumes/Macintosh HD 2/Documents/Work/new_data/new_"
 #define DATA_OUT "/Volumes/Macintosh HD 2/Documents/Trajectory-Privacy/out/"
-#define DATA_WIN "C:\\Users\\Jeep Li\\Documents\\Cprogram\\Work\\test_data\\new_"
-#define TEST_WIN "C:\\Users\\Jeep Li\\Documents\\Cprogram\\Work\\test_data\\list.txt"
-#define TEST_LIST "/Volumes/Macintosh HD 2/Documents/Work/test_data/list.txt"
-#define TEST_PATH "/Volumes/Macintosh HD 2/Documents/Work/test_data/new_"
+#define LIST_WIN "C:\\Users\\71423\\Desktop\\ppp\\new_data\\list.txt"
+#define PATH_WIN "C:\\Users\\71423\\Desktop\\ppp\\new_data\\new_"
 using namespace std;
 
 double AREA;
@@ -37,9 +35,9 @@ void test(int k, int s) {
     vector<TrajectorySet> ALL_TEC;
     ALL_T = readData();
     while (ALL_T.size() != 0) {
-        ALL_TEC.push_back(EqualTrack(ALL_T));
+        ALL_TEC.push_back(EqualTrack(ALL_T)); //TODO 同步轨迹集暂不改动
     }
-    writeData(ALL_TEC[0][0]);
+    //writeData(ALL_TEC[0][0]);
     n_TEC = ALL_TEC.size();
 
     /*
@@ -65,7 +63,7 @@ void test(int k, int s) {
 
         clock_t o1=clock();
         TSR += AnonyTrack(IL, TEC, k, s, 0.9, 0.3, 0.7, ti);  // 0.837758
-        cout<<(double)(clock()-o1)/CLOCKS_PER_SEC<<endl;
+        //cout<<"AnonyTotalTime:"<<(double)(clock()-o1)/CLOCKS_PER_SEC<<endl;
     }
     cout << "IL=" << IL / (n_TEC * AREA) * 100 << "%,";
     cout << "TSR=" << TSR / n_TEC * 100 << "%" << endl;
@@ -79,10 +77,10 @@ TrajectorySet readData() {  //换用FILE提高速度
     fstream fList;
     vector<Coord> tempCodSet;
     TrajectorySet TrackData;
-    fList.open(DATA_LIST, ios::in);
+    fList.open(LIST_WIN, ios::in);
     while (!fList.eof()) {  //读取出租车列表
         fList >> id >> length;
-        path = DATA_PATH + id + ".txt";
+        path = PATH_WIN + id + ".txt";
         fData = fopen(path.c_str(), "r");
         tempCodSet.reserve((unsigned long)length);
         for (int i = 0; i < length; ++i) {  //读取每个出租车的轨迹

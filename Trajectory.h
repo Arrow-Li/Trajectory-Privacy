@@ -38,9 +38,9 @@ class Trajectory {
     void syncTrajectory(unsigned int &, unsigned int &, int);
     void areaTrack(double &, double &, double &, double &);
     friend std::vector<Trajectory> EqualTrack(std::vector<Trajectory> &);
-    friend double getTrackDis(Trajectory, Trajectory);
-    friend double getTrackCos(Trajectory, Trajectory);
-    friend bool slCover(Trajectory, Trajectory, int, double, double &);
+    friend double getTrackDis(Trajectory &, Trajectory &);
+    friend double getTrackCos(Trajectory &, Trajectory &);
+    friend bool slCover(Trajectory &, Trajectory &, int, double, double &);
 };
 
 Trajectory::Trajectory() {
@@ -134,6 +134,8 @@ void Trajectory::generateNode(std::vector<Coord> *newCod, Coord *front, Coord *b
     } else {  // 两点之间
         ratio = (t - front->t) / (back->t - front->t);
         newX = front->x + ratio * (back->x - front->x);
+
+
         newY = front->y + ratio * (back->y - front->y);
     }
     newCoord = {newX, newY, (double)t};

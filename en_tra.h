@@ -55,33 +55,32 @@ reCreateTimeLine:
     return equalT;
 }
 
-double getTrackCos(Trajectory p, Trajectory q) {
-    int ignore = 0;
-    double cosValue = 0;
+double getTrackCos(Trajectory &p, Trajectory &q) {
+    int ignore = 1;
+    double tmp0, tmp1, tmp2, tmp3, up, down, cosValue = 0;
     for (int i = 0; i < p.length - 1; ++i) {
-        double num =
-            (p.cod[i + 1].x - p.cod[i].x) * (q.cod[i + 1].x - q.cod[i].x) +
-            (p.cod[i + 1].y - p.cod[i].y) * (q.cod[i + 1].y - q.cod[i].y);
-        double denom = sqrt(pow((p.cod[i + 1].x - p.cod[i].x), 2) +
-                            pow((p.cod[i + 1].y - p.cod[i].y), 2)) *
-                       sqrt(pow((q.cod[i + 1].x - q.cod[i].x), 2) +
-                            pow((q.cod[i + 1].y - q.cod[i].y), 2));
-        if (num == 0 || denom == 0) {  //忽略时间间隔内未移动的点
+        tmp0 = p.cod[i + 1].x - p.cod[i].x;
+        tmp1 = q.cod[i + 1].x - q.cod[i].x;
+        tmp2 = p.cod[i + 1].y - p.cod[i].y;
+        tmp3 = q.cod[i + 1].y - q.cod[i].y;
+        up = (tmp0) * (tmp1) + (tmp2) * (tmp3);
+        if (up == 0){  //忽略时间间隔内未移动的点
             ignore++;
             continue;
         }
-        cosValue += fabs(num / denom);  // cos要取绝对值？ 两个线段夹角在0到90度
+        down = sqrt((tmp0*tmp0 + tmp2*tmp2) * (tmp1*tmp1 + tmp3*tmp3));
+        cosValue += (up / down);  // 向量夹角[0,180]
     }
-    cosValue /= p.length - ignore;
+    cosValue /= (p.length - ignore);
     return cosValue;
 }
 
-double getTrackDis(Trajectory p, Trajectory q) {
-    double dis = 0;
+double getTrackDis(Trajectory &p, Trajectory &q) {
+    double dis = 0, tmp0, tmp1;
     for (int i = 0; i < p.length; ++i) {
-        double tmp = pow((p.cod[i].x - q.cod[i].x), 2) +
-                     pow((p.cod[i].y - q.cod[i].y), 2);
-        dis += sqrt(tmp);
+        tmp0 = (p.cod[i].x - q.cod[i].x), tmp1 = (p.cod[i].y - q.cod[i].y);
+        tmp0*=tmp0, tmp1*=tmp1;
+        dis += sqrt(tmp0+tmp1);
     }
     dis /= p.length;
     return dis;
@@ -89,56 +88,58 @@ double getTrackDis(Trajectory p, Trajectory q) {
 
 Matrix getDisMatrix(TrajectorySet &TEC, double &max, double &min) {
     int n = TEC.size();
+    double tmpValue;
     Matrix TDM(n);
-    max = 0;
-    min = INF;
+    max = 0, min = INF;
     for (int i = 0; i < n; ++i) {
         for (int j = i + 1; j < n; ++j) {
-            TDM.setValue(i, j, getTrackDis(TEC[i], TEC[j]));
-            if (TDM.getValue(i, j) >= max) max = TDM.getValue(i, j);
-            if (TDM.getValue(i, j) <= min) min = TDM.getValue(i, j);
+            tmpValue = getTrackDis(TEC[i], TEC[j]);
+            TDM.setValue(i, j, tmpValue);
+            if (tmpValue >= max) max = tmpValue;
+            if (tmpValue <= min) min = tmpValue;
         }
     }
     return TDM;
 }
 
-bool slCover(Trajectory p, Trajectory q, int s, double lambda, double &cpq) {
-    double xMax, xMin, yMax, yMin;
+bool slCover(Trajectory &p, Trajectory &q, int s, double lambda, double &cpq) {
     int count = 0;
+    double xMax, xMin, yMax, yMin;
     cpq = getTrackCos(p, q);  // cos(x) 弧度
     if (cpq < cos(lambda) || cpq > 1) return false;
     q.areaTrack(xMin, xMax, yMin, yMax);
     for (const auto &coord : p.cod) {
-        if (count >= s) return true;
         if ((coord.x >= xMin && coord.x <= xMax) ||
             (coord.y >= yMin && coord.y <= yMax))
             count++;
+        if (count >= s) return true;
     }
     return count >= s ? true : false;
 }
 
-double EW_Cons(double cpq, int i, int j, Matrix &TDM, double alpha, double beta,
-               double max, double min) {
+double calculateW(double cpq, double trackDis, double alpha, double beta,
+                  double max, double min) {
     double w = alpha * (1 - cpq);
     if (max == min)
         return w;
     else {
-        w += beta * (TDM.getValue(i, j) - min) / (max - min);
+        w += beta * (trackDis - min) / (max - min);
         return w;
     }
 }
 
 Graph createTG(TrajectorySet &TEC, double s, double lambda, double alpha,
-               double beta) {  //如何随机？
+               double beta) {
     Graph TG(TEC);
+    int SizeTG=TG.V.size();
     double trackDisMax, trackDisMin, trackCos;
     Matrix TDM(getDisMatrix(TEC, trackDisMax, trackDisMin));
-    for (int i = 0; i < TG.V.size(); ++i) {
-        for (int j = i + 1; j < TG.V.size(); ++j) {
+    for (int i = 0; i < SizeTG; ++i) {
+        for (int j = i + 1; j < SizeTG; ++j) {
             if (slCover(TG.V[i], TG.V[j], s, lambda, trackCos))
                 TG.insertE(i, j,
-                           EW_Cons(trackCos, i, j, TDM, alpha, beta,
-                                   trackDisMax, trackDisMin));
+                           calculateW(trackCos, TDM.getValue(i, j), alpha, beta,
+                                      trackDisMax, trackDisMin));
         }
     }
     return TG;
@@ -271,18 +272,24 @@ double AnonyTrack(double &InfoLoss, TrajectorySet &TEC, int k, double s,
         ti++;
         return 1;
     }
+
+    /*
     for (auto anonyArea : S)  // 生成轨迹匿名域集合
         AnonyTrackSet.push_back(AnonyArea(anonyArea.getT()));
+    */
 
+    AnonyTrackSet.push_back(AnonyArea(S[0].getT()));
+    std::cout<<AnonyTrackSet[0].getID()[0];
     std::fstream ft;
-    ft.open("/Volumes/Macintosh HD 2/Documents/Work/area.txt", std::ios::out);
-    Trajectory ttx(S[0].getT()[2]);
-    for (int i = 0; i < ttx.getLength(); i++) {
-        Coord xtt = ttx.getCoord(i);
-        ft << std::fixed << std::setprecision(12) << xtt.x << "\t" << xtt.y
+    ft.open("C:\\Users\\71423\\Desktop\\ppp\\area.txt", std::ios::out);
+    //Trajectory ttx(S[0].getT()[2]);
+    for (int i = 0; i < AnonyTrackSet[0].getLength(); i++) {
+        Area xtt = AnonyTrackSet[0].getArea(i);
+        ft << std::fixed << std::setprecision(12) << (xtt.xMax+xtt.xMin)/2 << "\t" << (xtt.yMax+xtt.yMin)/2
            << std::endl;
     }
     ft.close();
+
     S.clear();
     ti++;
     for (auto anonySet : AnonyTrackSet) {
