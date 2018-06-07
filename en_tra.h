@@ -64,11 +64,11 @@ double getTrackCos(Trajectory &p, Trajectory &q) {
         tmp2 = p.cod[i + 1].y - p.cod[i].y;
         tmp3 = q.cod[i + 1].y - q.cod[i].y;
         up = (tmp0) * (tmp1) + (tmp2) * (tmp3);
-        if (up == 0){  //忽略时间间隔内未移动的点
+        if (up == 0) {  //忽略时间间隔内未移动的点
             ignore++;
             continue;
         }
-        down = sqrt((tmp0*tmp0 + tmp2*tmp2) * (tmp1*tmp1 + tmp3*tmp3));
+        down = sqrt((tmp0 * tmp0 + tmp2 * tmp2) * (tmp1 * tmp1 + tmp3 * tmp3));
         cosValue += (up / down);  // 向量夹角[0,180]
     }
     cosValue /= (p.length - ignore);
@@ -79,8 +79,8 @@ double getTrackDis(Trajectory &p, Trajectory &q) {
     double dis = 0, tmp0, tmp1;
     for (int i = 0; i < p.length; ++i) {
         tmp0 = (p.cod[i].x - q.cod[i].x), tmp1 = (p.cod[i].y - q.cod[i].y);
-        tmp0*=tmp0, tmp1*=tmp1;
-        dis += sqrt(tmp0+tmp1);
+        tmp0 *= tmp0, tmp1 *= tmp1;
+        dis += sqrt(tmp0 + tmp1);
     }
     dis /= p.length;
     return dis;
@@ -131,7 +131,7 @@ double calculateW(double cpq, double trackDis, double alpha, double beta,
 Graph createTG(TrajectorySet &TEC, double s, double lambda, double alpha,
                double beta) {
     Graph TG(TEC);
-    int SizeTG=TG.V.size();
+    int SizeTG = TG.V.size();
     double trackDisMax, trackDisMin, trackCos;
     Matrix TDM(getDisMatrix(TEC, trackDisMax, trackDisMin));
     for (int i = 0; i < SizeTG; ++i) {
@@ -277,7 +277,7 @@ double AnonyTrack(double &InfoLoss, TrajectorySet &TEC, int k, double s,
     for (auto anonyArea : S)  // 生成轨迹匿名域集合
         AnonyTrackSet.push_back(AnonyArea(anonyArea.getT()));
     */
-
+    /*
     AnonyTrackSet.push_back(AnonyArea(S[0].getT()));
     std::cout<<AnonyTrackSet[0].getID()[0];
     std::fstream ft;
@@ -289,6 +289,7 @@ double AnonyTrack(double &InfoLoss, TrajectorySet &TEC, int k, double s,
            << std::endl;
     }
     ft.close();
+    */
 
     S.clear();
     ti++;
@@ -311,10 +312,10 @@ time_t noSec(time_t t, bool f) {
     return t;
 }
 
-void eraseFast(TrajectorySet &T, std::string id){ //快速删除vector
-    for(int i=0; i<T.size(); ++i){
-        if(T[i].getId()==id){
-            std::swap(T[i], T[T.size()-1]);
+void eraseFast(TrajectorySet &T, std::string id) {  //快速删除vector
+    for (int i = 0; i < T.size(); ++i) {
+        if (T[i].getId() == id) {
+            std::swap(T[i], T[T.size() - 1]);
             T.pop_back();
             break;
         }

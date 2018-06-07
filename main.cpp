@@ -12,7 +12,7 @@ using namespace std;
 
 double AREA;
 
-void test(int, int);
+double test(int, int);
 TrajectorySet readData();
 void writeData(Trajectory &);
 
@@ -21,21 +21,24 @@ int main() {
         clock_t begin;
         double used_time;
         begin = clock();
-        test(i, 5);
+        used_time = test(i, 5);
         AREA = 0;
-        used_time = (double)(clock() - begin) / CLOCKS_PER_SEC;
-        cout << used_time << "s" << endl;
+        used_time = (double)(clock() - begin) / CLOCKS_PER_SEC - used_time;
+        cout << "TotalTime:" << used_time << "s" << endl;
+        break;
     }
 }
 
-void test(int k, int s) {
+double test(int k, int s) {
+    clock_t readTime = clock();
     int ti = 0, n_TEC = 0;
     double IL = 0, TSR = 0;
     TrajectorySet ALL_T;
     vector<TrajectorySet> ALL_TEC;
     ALL_T = readData();
+    readTime = clock() - readTime;
     while (ALL_T.size() != 0) {
-        ALL_TEC.push_back(EqualTrack(ALL_T)); //TODO 同步轨迹集暂不改动
+        ALL_TEC.push_back(EqualTrack(ALL_T));  //TODO 同步轨迹集暂不改动
     }
     //writeData(ALL_TEC[0][0]);
     n_TEC = ALL_TEC.size();
@@ -60,13 +63,11 @@ void test(int k, int s) {
         /* 等价类规模过小:D1 is dropped since it does not satisfy the
         3-anonymity requirement. V1,V2 and V3 are trajectory k-anonymity
         sets with k=3. */
-
-        clock_t o1=clock();
         TSR += AnonyTrack(IL, TEC, k, s, 0.9, 0.3, 0.7, ti);  // 0.837758
-        //cout<<"AnonyTotalTime:"<<(double)(clock()-o1)/CLOCKS_PER_SEC<<endl;
     }
     cout << "IL=" << IL / (n_TEC * AREA) * 100 << "%,";
     cout << "TSR=" << TSR / n_TEC * 100 << "%" << endl;
+    return (double)(readTime / CLOCKS_PER_SEC);
 }
 
 TrajectorySet readData() {  //换用FILE提高速度
@@ -77,10 +78,10 @@ TrajectorySet readData() {  //换用FILE提高速度
     fstream fList;
     vector<Coord> tempCodSet;
     TrajectorySet TrackData;
-    fList.open(LIST_WIN, ios::in);
+    fList.open(DATA_LIST, ios::in);
     while (!fList.eof()) {  //读取出租车列表
         fList >> id >> length;
-        path = PATH_WIN + id + ".txt";
+        path = DATA_PATH + id + ".txt";
         fData = fopen(path.c_str(), "r");
         tempCodSet.reserve((unsigned long)length);
         for (int i = 0; i < length; ++i) {  //读取每个出租车的轨迹
@@ -89,7 +90,7 @@ TrajectorySet readData() {  //换用FILE提高速度
             tempCodSet.push_back(tempCod);
         }
         reverse(tempCodSet.begin(), tempCodSet.end());
-        TrackData.push_back(Trajectory(id, tempCodSet));
+        TrackData.emplace_back(Trajectory(id, tempCodSet));
         vector<Coord>().swap(tempCodSet), id.clear(), path.clear();
         fclose(fData);
     }

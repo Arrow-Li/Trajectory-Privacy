@@ -135,7 +135,6 @@ void Trajectory::generateNode(std::vector<Coord> *newCod, Coord *front, Coord *b
         ratio = (t - front->t) / (back->t - front->t);
         newX = front->x + ratio * (back->x - front->x);
 
-
         newY = front->y + ratio * (back->y - front->y);
     }
     newCoord = {newX, newY, (double)t};
