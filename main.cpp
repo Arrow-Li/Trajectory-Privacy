@@ -6,8 +6,8 @@
 #define DATA_LIST "/Volumes/Macintosh HD 2/Documents/Work/new_data/list.txt"
 #define DATA_PATH "/Volumes/Macintosh HD 2/Documents/Work/new_data/new_"
 #define DATA_OUT "/Volumes/Macintosh HD 2/Documents/Trajectory-Privacy/out/"
-#define LIST_WIN "C:\\Users\\71423\\Desktop\\ppp\\new_data\\list.txt"
-#define PATH_WIN "C:\\Users\\71423\\Desktop\\ppp\\new_data\\new_"
+#define LIST_WIN "C:\\Users\\Jeep Li\\Documents\\Cprogram\\Work\\new_data\\list.txt"
+#define PATH_WIN "C:\\Users\\Jeep Li\\Documents\\Cprogram\\Work\\new_data\\new_"
 using namespace std;
 
 double AREA;
@@ -78,10 +78,10 @@ TrajectorySet readData() {  //换用FILE提高速度
     fstream fList;
     vector<Coord> tempCodSet;
     TrajectorySet TrackData;
-    fList.open(DATA_LIST, ios::in);
+    fList.open(LIST_WIN, ios::in);
     while (!fList.eof()) {  //读取出租车列表
         fList >> id >> length;
-        path = DATA_PATH + id + ".txt";
+        path = PATH_WIN + id + ".txt";
         fData = fopen(path.c_str(), "r");
         tempCodSet.reserve((unsigned long)length);
         for (int i = 0; i < length; ++i) {  //读取每个出租车的轨迹

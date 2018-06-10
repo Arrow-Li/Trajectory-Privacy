@@ -152,8 +152,12 @@ void Trajectory::syncTrajectory(unsigned int &startT, unsigned int &endT, int ga
         }
         if (i == 0)
             generateNode(&newCod, &cod[0], &cod[1], timeLine);
-        else
-            generateNode(&newCod, &cod[i - 1], &cod[i], timeLine);
+        else {
+            if (i == this->length)
+                generateNode(&newCod, &cod[i - 2], &cod[i - 1], timeLine);
+            else
+                generateNode(&newCod, &cod[i - 1], &cod[i], timeLine);
+        }
     }
     newCod.swap(this->cod);
     std::vector<Coord>().swap(newCod);
