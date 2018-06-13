@@ -175,6 +175,8 @@ Vaw findVaw(std::vector<Vaw> W, std::string drop){
 }
 
 bool deleteCheck(int k, TrajectorySet *V, Graph *G) {
+    if (G->countV() == V->size())
+        return true;
     Graph *cloneG = new Graph(*G);
     for (auto &vi : *V)
         cloneG->deleteV(vi.getID());
@@ -238,20 +240,16 @@ double AnonyTrack(TrajectorySet &TEC, int k, double s,
                     if (W.size() <= 0) //无点相关,匿名集规模<k
                         break;
                     sort(W.begin(), W.end(), scmp);  //从小到大排序
-                    if(PartTG[i].find(W[0].id_connect) == -1 && W[0].id_connect == "ubjaju_6-1"){
-                        std::cout<< W[0].id_connect << std::endl;
-                        if (2>1){
-                            int dfs=3;
-                        }
-                        int as333=332;
-                    }
                     AnonyC.push_back(PartTG[i].getV(PartTG[i].find(W[0].id_connect)));
                     if (AnonyC.size() == k){ // 删除检测 是否会导致规模小于<k的连通分量产生？
                         if (!deleteCheck(k, &AnonyC, &PartTG[i])){
                             DropW.push_back(findVaw(W, AnonyC[AnonyC.size()-1].getID()));
                             drop.push_back(AnonyC[AnonyC.size()-1].getID());
                             AnonyC.pop_back();
-                        } else break;
+                        } else {
+                            W.clear();
+                            break;
+                        }
                     }
                     W.clear();
                 }
@@ -262,6 +260,10 @@ double AnonyTrack(TrajectorySet &TEC, int k, double s,
                 }
                 S.push_back(AnonyC);
                 TrajectorySet().swap(AnonyC);
+            }
+            else {
+                run[i]= false;
+                continue;
             }
         }
     }
@@ -289,7 +291,7 @@ double AnonyTrack(TrajectorySet &TEC, int k, double s,
     // InfoLoss1
 
     // InfoLoss2
-    IL2 = (double)(dropV+TG.countV()-hideV)/(sizeTEC-hideV);
+    IL2 = (sizeTEC-hideV == 0)? 1.0 : (double)(dropV+TG.countV()-hideV)/(sizeTEC-hideV);
 
     /*
     for (auto anonyArea : S)  // 生成轨迹匿名域集合
@@ -308,7 +310,7 @@ double AnonyTrack(TrajectorySet &TEC, int k, double s,
     }
     ft.close();
     */
-
+    std::cout<<IL1+IL2<<std::endl;
 
     return IL1+IL2;
 }

@@ -64,7 +64,6 @@ double test(int k, double s) {
         3-anonymity requirement. V1,V2 and V3 are trajectory k-anonymity
         sets with k=3. */
         TSR += AnonyTrack(TEC, k, s, 1.47, 0.3, 0.7, ti);  // 0.837758
-        cout<<TSR<<endl;
     }
     //cout << "IL=" << IL / (n_TEC * AREA) * 100 << "%,";
     cout << "InfoLoss=" << TSR / n_TEC * 100 << "%" << endl;
@@ -79,10 +78,10 @@ TrajectorySet readData() {  //换用FILE提高速度
     fstream fList;
     vector<Coord> tempCodSet;
     TrajectorySet TrackData;
-    fList.open(LIST_WIN, ios::in);
+    fList.open(DATA_LIST, ios::in);
     while (!fList.eof()) {  //读取出租车列表
         fList >> id >> length;
-        path = PATH_WIN + id + ".txt";
+        path = DATA_PATH + id + ".txt";
         fData = fopen(path.c_str(), "r");
         tempCodSet.reserve((unsigned long)length);
         for (int i = 0; i < length; ++i) {  //读取每个出租车的轨迹

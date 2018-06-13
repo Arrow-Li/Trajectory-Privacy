@@ -64,7 +64,6 @@ std::string Graph::refind(int x) { return V[x].getID(); }
 Trajectory Graph::getV(int x) {
     if (x < 0){
         std::cout<< "Error!" << std::endl;
-        return V[0];
     }
     return V[x];
 }
