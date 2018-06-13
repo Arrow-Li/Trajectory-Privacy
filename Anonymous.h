@@ -30,7 +30,7 @@ AnonyArea::AnonyArea(std::vector<Trajectory> T) {
     size = T.size();
     id = new std::string[size];
     length = T[0].getLength();
-    for (int i = 0; i < size; i++) id[i] = T[i].getId();
+    for (int i = 0; i < size; i++) id[i] = T[i].getID();
     for (int i = 0; i < length; i++) {
         double xMax, xMin, yMax, yMin;
         Coord flag = T[0].getCoord(i);

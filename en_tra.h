@@ -57,7 +57,7 @@ reCreateTimeLine:
 
 double getTrackCos(Trajectory &p, Trajectory &q) {
     int ignore = 1;
-    double tmp0, tmp1, tmp2, tmp3, up, down, cosValue = 0;
+    double tmp0, tmp1, tmp2, tmp3, up, down, TrackLen = 0, cosValue = 0;
     for (int i = 0; i < p.length - 1; ++i) {
         tmp0 = p.cod[i + 1].x - p.cod[i].x;
         tmp1 = q.cod[i + 1].x - q.cod[i].x;
@@ -65,13 +65,20 @@ double getTrackCos(Trajectory &p, Trajectory &q) {
         tmp3 = q.cod[i + 1].y - q.cod[i].y;
         up = (tmp0) * (tmp1) + (tmp2) * (tmp3);
         if (up == 0) {  //忽略时间间隔内未移动的点
-            ignore++;
+            //ignore++;
             continue;
         }
-        down = sqrt((tmp0 * tmp0 + tmp2 * tmp2) * (tmp1 * tmp1 + tmp3 * tmp3));
-        cosValue += (up / down);  // 向量夹角[0,180]
+
+        tmp0 = sqrt(tmp0 * tmp0 + tmp2 * tmp2);
+        tmp1 = sqrt(tmp1 * tmp1 + tmp3 * tmp3);
+        TrackLen += (tmp0 + tmp1)/ 2.0;
+        down = 1.0 / tmp0 + 1.0 / tmp1;
+
+        //down = sqrt((tmp0 * tmp0 + tmp2 * tmp2) * (tmp1 * tmp1 + tmp3 * tmp3));
+
+        cosValue += (up * down * 0.5);  // 向量夹角[0,180]
     }
-    cosValue /= (p.length - ignore);
+    cosValue /= TrackLen;
     return cosValue;
 }
 
@@ -102,19 +109,19 @@ Matrix getDisMatrix(TrajectorySet &TEC, double &max, double &min) {
     return TDM;
 }
 
-bool slCover(Trajectory &p, Trajectory &q, int s, double lambda, double &cpq) {
+bool slCover(Trajectory &p, Trajectory &q, double s, double lambda, double &cpq) {
     int count = 0;
-    double xMax, xMin, yMax, yMin;
+    double xMax, xMin, yMax, yMin, length = p.getLength();
     cpq = getTrackCos(p, q);  // cos(x) 弧度
     if (cpq < cos(lambda) || cpq > 1) return false;
     q.areaTrack(xMin, xMax, yMin, yMax);
     for (const auto &coord : p.cod) {
-        if ((coord.x >= xMin && coord.x <= xMax) ||
-            (coord.y >= yMin && coord.y <= yMax))
+        if ((coord.x < xMin || coord.x > xMax) ||
+            (coord.y < yMin || coord.y > yMax))
             count++;
-        if (count >= s) return true;
+        if (count/length >= s) return false;
     }
-    return count >= s ? true : false;
+    return count/length >= s ? false : true;
 }
 
 double calculateW(double cpq, double trackDis, double alpha, double beta,
@@ -145,133 +152,144 @@ Graph createTG(TrajectorySet &TEC, double s, double lambda, double alpha,
     return TG;
 }
 
-double AnonyTrack(double &InfoLoss, TrajectorySet &TEC, int k, double s,
+bool AnonyDoneCheck(bool *run, int len){
+    for (int i = 0; i < len ; ++i){
+        if (run[i])
+            return false;
+    }
+    return true;
+}
+
+bool VawInSetCheck(std::string id, TrajectorySet *s){
+    for (auto &si : *s) {
+        if(id == si.getID())
+            return true;
+    }
+    return false;
+}
+
+Vaw findVaw(std::vector<Vaw> W, std::string drop){
+    for (const auto &w : W)
+        if(w.id_connect == drop)
+            return w;
+}
+
+bool deleteCheck(int k, TrajectorySet *V, Graph *G) {
+    Graph *cloneG = new Graph(*G);
+    for (auto &vi : *V)
+        cloneG->deleteV(vi.getID());
+    for (auto &gi : cloneG->DFS(0))
+        if (gi.countV() < k) {
+            delete cloneG;
+            return false;
+        }
+    delete cloneG;
+    return true;
+}
+
+double AnonyTrack(TrajectorySet &TEC, int k, double s,
                   double lambda, double alpha, double beta, int &ti) {
-    Graph TG(createTG(TEC, s, lambda, alpha, beta)), *V;
+    Graph TG(createTG(TEC, s, lambda, alpha, beta));
     std::vector<AnonyArea> AnonyTrackSet;
-    std::vector<Graph> G(TG.DFS(0)), S;
-    std::vector<Vaw> W;
-    double n_TEC = TEC.size(), TSR = 0;
-    //隐匿Size<k的连通分量
-    bool tag[G.size()], uc = true;
-    memset(tag, true, sizeof(tag));
-    for (int i = 0; i < G.size(); ++i)
-        tag[i] = G[i].countV() > k ? true : false;
-    //隐匿End
-    Graph *TG_copy = new Graph(TG);
-    while (TG.countV() > 0) {
-        for (int i = 0; i < G.size(); ++i) {
-            if (!tag[i] && uc) {  //跳过规模小于k的连通分量
-                tag[i] = true;
+    std::vector<Graph> PartTG(TG.DFS(0));
+    std::vector<TrajectorySet> S;
+    std::vector<Vaw> W, DropW;
+    TrajectorySet AnonyC;
+    int hideV = 0, dropV = 0;
+    double sizeTEC = TEC.size(), TSR = 0;
+    bool run[PartTG.size()], tag[PartTG.size()];
+    memset(tag, true, sizeof(tag)), memset(run, true , sizeof(run));
+    for (int i = 0; i < PartTG.size(); ++i) { //隐匿规模小于k的连通分量
+        if (PartTG[i].countV() < k){
+            tag[i] = false, run[i] = false;
+            hideV += PartTG[i].countV();
+        }
+    }
+    while (!AnonyDoneCheck(run, PartTG.size())) {
+        for (int i = 0; i < PartTG.size(); ++i) {
+            if (!tag[i])  //跳过规模小于k的连通分量
                 continue;
-            }
-            if (G[i].countV() >= k) {
-                Trajectory v1, v2;
-                double min_e = G[i].minE(
-                    v1, v2);  // TODO 在TG还是G[i]?中寻找权最小的边(v1,v2)
-                if (v1.getLength() == 0 && v2.getLength() == 0) {
-                    std::vector<Graph> UCG = G[i].DFS(0);
-                    G.erase(G.begin() + i);
-                    G.insert(G.end(), UCG.begin(), UCG.end());
-                    i--;
-                    uc = false;
+            if (PartTG[i].countV() >= k) {
+                int v1, v2;
+                double min_e = PartTG[i].minE(v1, v2);
+                if (v1 == -1 || v2 == -1) {
+                    //todo to be modify
+                    run[i] = false;
                     continue;
                 }
-                V = new Graph(k);
-                V->insertV(v1);
-                V->insertV(v2);
-                V->insertE(0, 1, min_e);  // TODO k=1越界？
-                while (V->countV() < k) {
-                    for (int j = 0; j < V->countV(); ++j) {
+                AnonyC.push_back(PartTG[i].getV(v1));
+                AnonyC.push_back(PartTG[i].getV(v2));
+                std::vector<std::string> drop;
+                while (AnonyC.size() < k) {
+                    for (auto &ac : AnonyC) {
                         std::vector<std::string> Array_Link =
-                            G[i].linkV(V->refind(j));
+                            PartTG[i].linkV(ac.getID(),drop); //todo ccg->cloneTG ?
                         for (int p = 0; p < Array_Link.size(); ++p) {
-                            if (!same_element(Array_Link[p], V->getT())) {
+                            if (!same_element(Array_Link[p], AnonyC)) {
                                 Vaw temp = {
-                                    V->refind(j), Array_Link[p],
-                                    G[i].weight(G[i].find(V->refind(j)),
-                                                G[i].find(Array_Link[p]))};
+                                        ac.getID(), Array_Link[p],
+                                    PartTG[i].weight(PartTG[i].find(ac.getID()),
+                                                PartTG[i].find(Array_Link[p]))};
                                 W.push_back(temp);
                             }
                         }
                     }
                     //生成一个k-匿名集V
-                    if (W.size() <= 0)  //无点相关的情况
+                    if (W.size() <= 0) //无点相关,匿名集规模<k
                         break;
                     sort(W.begin(), W.end(), scmp);  //从小到大排序
-                    V->insertV(G[i].getV(G[i].find(W[0].id_connect)));
-                    V->insertE(V->find(W[0].id), V->find(W[0].id_connect),
-                               W[0].weight);
+                    if(PartTG[i].find(W[0].id_connect) == -1 && W[0].id_connect == "ubjaju_6-1"){
+                        std::cout<< W[0].id_connect << std::endl;
+                        if (2>1){
+                            int dfs=3;
+                        }
+                        int as333=332;
+                    }
+                    AnonyC.push_back(PartTG[i].getV(PartTG[i].find(W[0].id_connect)));
+                    if (AnonyC.size() == k){ // 删除检测 是否会导致规模小于<k的连通分量产生？
+                        if (!deleteCheck(k, &AnonyC, &PartTG[i])){
+                            DropW.push_back(findVaw(W, AnonyC[AnonyC.size()-1].getID()));
+                            drop.push_back(AnonyC[AnonyC.size()-1].getID());
+                            AnonyC.pop_back();
+                        } else break;
+                    }
                     W.clear();
                 }
-                for (int j = 0; j < V->countV();
-                     ++j) {  //在TG删除V的节点及其关联边
-                    TG.deleteV(V->refind(j));
-                    G[i].deleteV(V->refind(j));
+                drop.clear();
+                for (auto &ci : AnonyC) {  //在TG删除V的节点及其关联边
+                    TG.deleteV(ci.getID());
+                    PartTG[i].deleteV(ci.getID());
                 }
-                S.push_back(*V);
-                delete V;
-            } else {
-                double cost = INF;
-                int min_cost_pos;
-                std::string id, id_connect;
-                for (int j = 0; j < S.size(); ++j) {
-                    std::string t_id, t_id_con;
-                    double temp_cost =
-                        TG_copy->compare(G[i], S[j], t_id, t_id_con);
-                    if (temp_cost < cost) {
-                        cost = temp_cost;
-                        min_cost_pos = j;
-                        id = t_id;
-                        id_connect = t_id_con;
-                    }
-                }
-                if (cost != INF)
-                    merge_graph(G[i], S[min_cost_pos], id, id_connect,
-                                cost);  // id-G1 id_connect-G2
-                //在TG中删除G[i]
-                if (TG.countV() <= 0) break;
-                for (int l = 0; l < G[i].countV(); ++l)
-                    TG.deleteV(G[i].refind(l));
+                S.push_back(AnonyC);
+                TrajectorySet().swap(AnonyC);
             }
         }
     }
-    std::vector<Graph>::iterator it = S.begin();
-    while (it != S.end()) {  // k-匿名集轨迹数目<k
-        if ((*it).countV() >= k) {
-            ++it;
-            continue;
-        }
-        double cost = INF;
-        int min_cost_pos;
-        std::string id, id_connect;
-        for (int j = 0; j < S.size(); ++j) {
-            if (it == S.begin() + j ||
-                (*it).countV() + S[j].countV() >=
-                    2 * k)  //匿名集节点数是不是不能超过2k?
-                continue;
-            std::string t_id, t_id_con;
-            double temp_cost = TG_copy->compare((*it), S[j], t_id, t_id_con);
-            if (temp_cost < cost) {
-                cost = temp_cost;
 
-                min_cost_pos = j;
-                id = t_id;
-                id_connect = t_id_con;
+    sort(DropW.begin(), DropW.end(), scmp);
+    for (const auto &wi : DropW) {
+        for (auto &si : S) {
+            if(si.size()>=2*k-1)
+                continue;
+            if(VawInSetCheck(wi.id, &si)){
+                if (TG.find(wi.id_connect) == -1)
+                    break;
+                si.push_back(TG.getV(TG.find(wi.id_connect)));
+                TG.deleteV(wi.id_connect);
+                break;
             }
         }
-        if (cost != INF)
-            merge_graph((*it), S[min_cost_pos], id, id_connect, cost);
-        S.erase(it);
     }
-    delete TG_copy;
+    for (const auto &s : S)
+        if(s.size() < k)
+            dropV += s.size();
     // TODO 信息损失
     // TODO InfoLoss+=XXX
-    // InfoLoss
-    if (S.size() == 0) {
-        ti++;
-        return 1;
-    }
+    double IL1=0, IL2=0;
+    // InfoLoss1
+
+    // InfoLoss2
+    IL2 = (double)(dropV+TG.countV()-hideV)/(sizeTEC-hideV);
 
     /*
     for (auto anonyArea : S)  // 生成轨迹匿名域集合
@@ -291,16 +309,8 @@ double AnonyTrack(double &InfoLoss, TrajectorySet &TEC, int k, double s,
     ft.close();
     */
 
-    S.clear();
-    ti++;
-    for (auto anonySet : AnonyTrackSet) {
-        double tt = anonySet.countArea();
-        InfoLoss += tt;
-    }
-    // TSR
-    for (auto i : S) TSR += i.countV();
-    TSR = (n_TEC - TSR) / n_TEC;
-    return TSR;
+
+    return IL1+IL2;
 }
 
 time_t noSec(time_t t, bool f) {
@@ -314,7 +324,7 @@ time_t noSec(time_t t, bool f) {
 
 void eraseFast(TrajectorySet &T, std::string id) {  //快速删除vector
     for (int i = 0; i < T.size(); ++i) {
-        if (T[i].getId() == id) {
+        if (T[i].getID() == id) {
             std::swap(T[i], T[T.size() - 1]);
             T.pop_back();
             break;
@@ -324,7 +334,7 @@ void eraseFast(TrajectorySet &T, std::string id) {  //快速删除vector
 
 bool same_element(std::string id, TrajectorySet &v) {
     for (int i = 0; i < v.size(); ++i) {
-        if (id == v[i].getId()) return true;
+        if (id == v[i].getID()) return true;
     }
     return false;
 }

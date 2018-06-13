@@ -10,6 +10,7 @@ class Graph {
     void visit(int, bool *, std::vector<int> &);
 
    public:
+    ~Graph();
     Graph(int size) : WE(size){};
     Graph(TrajectorySet &t);
     Graph(const Graph &G) : WE(G.WE) { V = G.V; }
@@ -18,12 +19,12 @@ class Graph {
     void insertE(int, int, double);
     double weight(int, int);
     void show();  // TODO temp
-    double minE(Trajectory &, Trajectory &);
+    double minE(int &, int &);
     int find(std::string);
     void deleteV(std::string);
     double compare(Graph G1, Graph G2, std::string &, std::string &);
     std::string refind(int);
-    std::vector<std::string> linkV(std::string);
+    std::vector<std::string> linkV(std::string,std::vector<std::string>);
     Trajectory getV(int);
     TrajectorySet &getT();
     int next(int, int);
@@ -32,6 +33,10 @@ class Graph {
     friend void merge_graph(Graph &, Graph &, std::string, std::string, double);
     friend Graph createTG(TrajectorySet &, double, double, double, double);
 };
+
+Graph::~Graph() {
+    TrajectorySet().swap(V);
+}
 
 Graph::Graph(TrajectorySet &t) : WE(t.size()) { V = t; }
 
@@ -48,23 +53,31 @@ double Graph::weight(int i, int j) { return WE.getValue(i, j); }
 int Graph::find(std::string id) {
     int i;
     for (i = 0; i < V.size(); i++) {
-        if (V[i].getId() == id) break;
+        if (V[i].getID() == id) break;
     }
     if (i == V.size()) return -1;
     return i;
 }
 
-std::string Graph::refind(int x) { return V[x].getId(); }
+std::string Graph::refind(int x) { return V[x].getID(); }
 
-Trajectory Graph::getV(int x) { return V[x]; }
+Trajectory Graph::getV(int x) {
+    if (x < 0){
+        std::cout<< "Error!" << std::endl;
+        return V[0];
+    }
+    return V[x];
+}
 
 TrajectorySet &Graph::getT() { return this->V; }
 
-std::vector<std::string> Graph::linkV(std::string a) {
+std::vector<std::string> Graph::linkV(std::string a, std::vector<std::string> drop) {
     std::vector<std::string> v;
     int x = this->find(a);
     for (int i = 0; i < V.size(); ++i) {
         if (i == x) continue;
+        if (!drop.empty() && std::find(drop.begin(), drop.end(), this->refind(i)) != drop.end())
+            continue;
         if (WE.getValue(x, i) != INF) v.push_back(this->refind(i));
     }
     return v;
@@ -76,22 +89,17 @@ void Graph::deleteV(std::string x) {
     V.erase(V.begin() + this->find(x));
 }
 
-double Graph::minE(Trajectory &v1, Trajectory &v2) {
+double Graph::minE(int &v1, int &v2) {
     double min = INF;
-    int x = 0, y = 0;
-
+    v1 = -1, v2 = -1;
     for (int i = 0; i < V.size(); ++i) {
         for (int j = i + 1; j < V.size(); ++j) {
             if (WE.getValue(i, j) < min && WE.getValue(i, j) > 0) {
                 min = WE.getValue(i, j);
-                x = i;
-                y = j;
+                v1 = i;
+                v2 = j;
             }
         }
-    }
-    if (x != y) {
-        v1 = V[x];
-        v2 = V[y];
     }
     return min;
 }
@@ -152,18 +160,19 @@ double Graph::compare(Graph G1, Graph G2, std::string &id,
     for (int i = 0; i < G1.countV(); ++i) {
         for (int j = 0; j < G2.countV(); ++j) {
             double temp_w =
-                this->weight(find(G1.V[i].getId()), find(G2.V[j].getId()));
+                this->weight(find(G1.V[i].getID()), find(G2.V[j].getID()));
             if (temp_w != INF /*&&temp_w!=0*/) {
                 if (temp_w < min_w) {
                     min_w = temp_w;
-                    id = G1.V[i].getId();
-                    id_connect = G2.V[j].getId();
+                    id = G1.V[i].getID();
+                    id_connect = G2.V[j].getID();
                 }
             }
         }
     }
     return min_w;
 }
+
 
 /*
 bool pcmp(const double &d1, const double &d2){

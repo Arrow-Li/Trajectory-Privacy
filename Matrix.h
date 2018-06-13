@@ -6,6 +6,7 @@ class Matrix {  // 下三角存储
     double *mat;
 
    public:
+    ~Matrix();
     Matrix(int);
     Matrix(const Matrix &);
     void setValue(int, int, double);
@@ -15,6 +16,12 @@ class Matrix {  // 下三角存储
     void print();
     void show();  // TODO temp
 };
+
+Matrix::~Matrix() {
+    n = 0 ,length = 0;
+    delete mat;
+    mat = NULL;
+}
 
 Matrix::Matrix(int n) {
     this->n = n;

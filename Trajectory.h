@@ -30,7 +30,7 @@ class Trajectory {
     Trajectory(std::string, std::vector<Coord>);
     const Trajectory &operator=(const Trajectory &);
     void clear();
-    std::string getId();
+    std::string getID();
     Coord getCoord(int);
     unsigned int getLength();
     void insertNode(unsigned int, double, Coord *);
@@ -40,7 +40,7 @@ class Trajectory {
     friend std::vector<Trajectory> EqualTrack(std::vector<Trajectory> &);
     friend double getTrackDis(Trajectory &, Trajectory &);
     friend double getTrackCos(Trajectory &, Trajectory &);
-    friend bool slCover(Trajectory &, Trajectory &, int, double, double &);
+    friend bool slCover(Trajectory &, Trajectory &, double, double, double &);
 };
 
 Trajectory::Trajectory() {
@@ -66,7 +66,7 @@ const Trajectory &Trajectory::operator=(const Trajectory &other) {
     return *this;
 }
 
-std::string Trajectory::getId() { return id; }
+std::string Trajectory::getID() { return id; }
 
 Coord Trajectory::getCoord(int x) { return cod[x]; }
 

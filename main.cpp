@@ -12,7 +12,7 @@ using namespace std;
 
 double AREA;
 
-double test(int, int);
+double test(int, double);
 TrajectorySet readData();
 void writeData(Trajectory &);
 
@@ -21,7 +21,7 @@ int main() {
         clock_t begin;
         double used_time;
         begin = clock();
-        used_time = test(i, 5);
+        used_time = test(i, 0.035);
         AREA = 0;
         used_time = (double)(clock() - begin) / CLOCKS_PER_SEC - used_time;
         cout << "TotalTime:" << used_time << "s" << endl;
@@ -29,7 +29,7 @@ int main() {
     }
 }
 
-double test(int k, int s) {
+double test(int k, double s) {
     clock_t readTime = clock();
     int ti = 0, n_TEC = 0;
     double IL = 0, TSR = 0;
@@ -63,10 +63,11 @@ double test(int k, int s) {
         /* 等价类规模过小:D1 is dropped since it does not satisfy the
         3-anonymity requirement. V1,V2 and V3 are trajectory k-anonymity
         sets with k=3. */
-        TSR += AnonyTrack(IL, TEC, k, s, 0.9, 0.3, 0.7, ti);  // 0.837758
+        TSR += AnonyTrack(TEC, k, s, 1.47, 0.3, 0.7, ti);  // 0.837758
+        cout<<TSR<<endl;
     }
-    cout << "IL=" << IL / (n_TEC * AREA) * 100 << "%,";
-    cout << "TSR=" << TSR / n_TEC * 100 << "%" << endl;
+    //cout << "IL=" << IL / (n_TEC * AREA) * 100 << "%,";
+    cout << "InfoLoss=" << TSR / n_TEC * 100 << "%" << endl;
     return (double)(readTime / CLOCKS_PER_SEC);
 }
 
@@ -101,7 +102,7 @@ TrajectorySet readData() {  //换用FILE提高速度
 void writeData(Trajectory &t) {  //格式化输出测试数据,便于可视化
     // TODO temp
     fstream f;
-    f.open(string(DATA_OUT) + t.getId() + ".out", ios::out);
+    f.open(string(DATA_OUT) + t.getID() + ".out", ios::out);
     f << "lat,lon" << endl;
     for (int i = 0; i < t.getLength(); ++i) {
         Coord temp = t.getCoord(i);
