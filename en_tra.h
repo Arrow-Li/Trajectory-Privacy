@@ -6,7 +6,6 @@ time_t noSec(time_t, bool);
 void eraseFast(TrajectorySet &, std::string);
 bool same_element(std::string, TrajectorySet &);
 void merge_graph(Graph &, Graph &, std::string, std::string, double);
-bool scmp(const Vaw &, const Vaw &);
 
 TrajectorySet EqualTrack(TrajectorySet &T) {
     TrajectorySet equalT;
@@ -189,13 +188,27 @@ bool deleteCheck(int k, TrajectorySet *V, Graph *G) {
     return true;
 }
 
+TrajectorySet createAnonyV(Graph &PG, int k) {
+    bool token = false;
+    std::vector<Vaw> MinE;
+    TrajectorySet AnonyV;
+    MinE = PG.getMinE();
+
+    AnonyV.push_back(PG.getV(PG.find(MinE[0].id)));
+    AnonyV.push_back(PG.getV(PG.find(MinE[0].id_connect)));
+
+    while (AnonyV.size() < k) {
+        //
+    }
+}
+
 double AnonyTrack(TrajectorySet &TEC, int k, double s,
                   double lambda, double alpha, double beta, int &ti) {
     Graph TG(createTG(TEC, s, lambda, alpha, beta));
     std::vector<AnonyArea> AnonyTrackSet;
     std::vector<Graph> PartTG(TG.DFS(0));
     std::vector<TrajectorySet> S;
-    std::vector<Vaw> W, DropW;
+    std::vector<Vaw> W, MinE, DropW;
     TrajectorySet AnonyC;
     int hideV = 0, dropV = 0;
     double sizeTEC = TEC.size(), TSR = 0;
@@ -212,8 +225,11 @@ double AnonyTrack(TrajectorySet &TEC, int k, double s,
             if (!tag[i])  //跳过规模小于k的连通分量
                 continue;
             if (PartTG[i].countV() >= k) {
-                int v1, v2;
-                double min_e = PartTG[i].minE(v1, v2);
+                if (MinE.size() == 0) {
+                    MinE.clear();
+                    MinE = PartTG[i].getMinE(); //记录最小边
+                }
+                int v1 = PartTG[i].find(MinE[0].id), v2 = PartTG[i].find(MinE[0].id_connect);
                 if (v1 == -1 || v2 == -1) {
                     //todo to be modify
                     run[i] = false;
@@ -227,19 +243,28 @@ double AnonyTrack(TrajectorySet &TEC, int k, double s,
                         std::vector<std::string> Array_Link =
                             PartTG[i].linkV(ac.getID(),drop); //todo ccg->cloneTG ?
                         for (int p = 0; p < Array_Link.size(); ++p) {
-                            if (!same_element(Array_Link[p], AnonyC)) {
-                                Vaw temp = {
-                                        ac.getID(), Array_Link[p],
-                                    PartTG[i].weight(PartTG[i].find(ac.getID()),
-                                                PartTG[i].find(Array_Link[p]))};
-                                W.push_back(temp);
-                            }
+                            if (!same_element(Array_Link[p], AnonyC))
+                                W.push_back({ac.getID(), Array_Link[p], PartTG[i].weight(PartTG[i].find(ac.getID()), PartTG[i].find(Array_Link[p]))});
                         }
                     }
                     //生成一个k-匿名集V
-                    if (W.size() <= 0) //无点相关,匿名集规模<k
-                        break;
-                    sort(W.begin(), W.end(), scmp);  //从小到大排序
+                    if (W.size() <= 0) {// 无点相关,匿名集规模<k
+                        if (AnonyC.size() <= 2) {
+                            AnonyC.clear();
+                            drop.clear();
+                            MinE.erase(MinE.begin());
+                            v1 = PartTG[i].find(MinE[0].id);
+                            v2 = PartTG[i].find(MinE[0].id_connect);
+                            AnonyC.push_back(PartTG[i].getV(v1));
+                            AnonyC.push_back(PartTG[i].getV(v2));
+                            continue;
+                        }
+                        drop.push_back(AnonyC[AnonyC.size()-1].getID());
+                        AnonyC.pop_back();
+                        W.clear();
+                        continue;
+                    }
+                    sort(W.begin(), W.end(), VawCompare);  //从小到大排序
                     AnonyC.push_back(PartTG[i].getV(PartTG[i].find(W[0].id_connect)));
                     if (AnonyC.size() == k){ // 删除检测 是否会导致规模小于<k的连通分量产生？
                         if (!deleteCheck(k, &AnonyC, &PartTG[i])){
@@ -254,6 +279,7 @@ double AnonyTrack(TrajectorySet &TEC, int k, double s,
                     W.clear();
                 }
                 drop.clear();
+                MinE.erase(MinE.begin());
                 for (auto &ci : AnonyC) {  //在TG删除V的节点及其关联边
                     TG.deleteV(ci.getID());
                     PartTG[i].deleteV(ci.getID());
@@ -268,7 +294,7 @@ double AnonyTrack(TrajectorySet &TEC, int k, double s,
         }
     }
 
-    sort(DropW.begin(), DropW.end(), scmp);
+    sort(DropW.begin(), DropW.end(), VawCompare);
     for (const auto &wi : DropW) {
         for (auto &si : S) {
             if(si.size()>=2*k-1)
@@ -347,9 +373,4 @@ void merge_graph(Graph &G1, Graph &G2, std::string id, std::string id_connect,
     G2.V.insert(G2.V.end(), G1.V.begin(), G1.V.end());
     G2.WE.merge(G2.find(id_connect), G1.find(id), w, G1.WE);
     return;
-}
-
-bool scmp(const Vaw &v1, const Vaw &v2) {
-    if (v1.weight < v2.weight) return true;
-    return false;
 }

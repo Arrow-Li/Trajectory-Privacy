@@ -78,10 +78,10 @@ TrajectorySet readData() {  //换用FILE提高速度
     fstream fList;
     vector<Coord> tempCodSet;
     TrajectorySet TrackData;
-    fList.open(DATA_LIST, ios::in);
+    fList.open(LIST_WIN, ios::in);
     while (!fList.eof()) {  //读取出租车列表
         fList >> id >> length;
-        path = DATA_PATH + id + ".txt";
+        path = PATH_WIN + id + ".txt";
         fData = fopen(path.c_str(), "r");
         tempCodSet.reserve((unsigned long)length);
         for (int i = 0; i < length; ++i) {  //读取每个出租车的轨迹

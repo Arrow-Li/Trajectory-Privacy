@@ -4,6 +4,8 @@
 #include "Matrix.h"
 #include "Trajectory.h"
 
+bool VawCompare(const Vaw &, const Vaw &);
+
 class Graph {
     TrajectorySet V;
     Matrix WE;
@@ -22,6 +24,7 @@ class Graph {
     double minE(int &, int &);
     int find(std::string);
     void deleteV(std::string);
+    std::vector<Vaw> getMinE();
     double compare(Graph G1, Graph G2, std::string &, std::string &);
     std::string refind(int);
     std::vector<std::string> linkV(std::string,std::vector<std::string>);
@@ -172,6 +175,23 @@ double Graph::compare(Graph G1, Graph G2, std::string &id,
     return min_w;
 }
 
+std::vector<Vaw> Graph::getMinE() {
+    std::vector<Vaw> min;
+    for (int i = 0; i < V.size(); ++i) {
+        for (int j = i + 1; j < V.size(); ++j) {
+            if (WE.getValue(i,j) == INF)
+                continue;
+            min.push_back({V[i].getID(),V[j].getID(),WE.getValue(i,j)});
+        }
+    }
+    sort(min.begin(), min.end(), VawCompare);
+    return min;
+}
+
+bool VawCompare(const Vaw &v1, const Vaw &v2) {
+    if (v1.weight < v2.weight) return true;
+    return false;
+}
 
 /*
 bool pcmp(const double &d1, const double &d2){
