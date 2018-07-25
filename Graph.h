@@ -58,7 +58,10 @@ int Graph::find(std::string id) {
     for (i = 0; i < V.size(); i++) {
         if (V[i].getID() == id) break;
     }
-    if (i == V.size()) return -1;
+    if (i == V.size()) {
+        std::cout << "Cant find " << id << " in Graph!" <<std::endl;
+        return -1;
+    }
     return i;
 }
 
