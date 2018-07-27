@@ -167,6 +167,7 @@ bool VawInSetCheck(std::string id, TrajectorySet *s){
     return false;
 }
 
+
 Vaw findVaw(std::vector<Vaw> W, std::string drop){
     for (const auto &w : W)
         if(w.id_connect == drop)
@@ -188,17 +189,94 @@ bool deleteCheck(int k, TrajectorySet *V, Graph *G) {
     return true;
 }
 
+std::vector<Vaw> getLinkV(TrajectorySet &V, Graph &G) {
+    std::vector<Vaw> LinkVaw;
+    for (auto &v : V) {
+        std::vector<std::string> linkID = G.linkV(v.getID(), std::vector<std::string>());
+        for (const auto & id : linkID) {
+            if (!same_element(id, V))
+                LinkVaw.push_back({v.getID(), id, G.weight(G.find(v.getID()), G.find(id))});
+        }
+    }
+    sort(LinkVaw.begin(), LinkVaw.end(), VawCompare);
+    return LinkVaw;
+}
+
 TrajectorySet createAnonyV(Graph &PG, int k) {
     bool token = false;
-    std::vector<Vaw> MinE;
+    std::vector<Vaw> W, MinE;
     TrajectorySet AnonyV;
     MinE = PG.getMinE();
 
-    AnonyV.push_back(PG.getV(PG.find(MinE[0].id)));
-    AnonyV.push_back(PG.getV(PG.find(MinE[0].id_connect)));
-
+    std::vector<std::string> drop;
+    int j = 0;
+reStart:
+    if (j >= MinE.size()) {
+        std::cout<<"AAA"<<std::endl;
+        return TrajectorySet();
+    }
+    AnonyV.push_back(PG.getV(PG.find(MinE[j].id)));
+    AnonyV.push_back(PG.getV(PG.find(MinE[j].id_connect)));
+    int i = 0;
     while (AnonyV.size() < k) {
-        //
+        W = getLinkV(AnonyV, PG);
+
+        if (i >= W.size()) {
+            j++;
+            AnonyV.clear();
+            goto reStart;
+        }
+
+        AnonyV.push_back(PG.getV(PG.find(W[i].id_connect)));
+        if (!deleteCheck(k, &AnonyV, &PG)) {
+            AnonyV.pop_back();
+            if (++i >= W.size()) {
+                j++;
+                AnonyV.clear();
+                goto reStart;
+            }
+        }
+    }
+    return AnonyV;
+}
+
+void isCycle(Graph *PG) {
+    int w;
+    for (int i = 0; i < PG->countV(); ++i) {
+        for (int j = i + 1; j < PG->countV(); ++j) {
+            if (PG->weight(i,j) != INF)
+                w++;
+        }
+    }
+    if (w >= PG->countV())
+        std::cout << "Have a Cycle!" << std::endl;
+    return;
+}
+
+void deleteCycle(Graph *PG) {
+    for (int i = 0; i < PG->countV(); ++i) {
+        std::vector<Vaw> connectV;
+        for (int j = i + 1; j < PG->countV(); ++j) {
+            if (PG->weight(i,j) != INF) {
+                connectV.push_back({std::to_string(i),std::to_string(j),PG->weight(i,j)});
+            }
+        }
+        if (connectV.size() <= 1)
+            continue;
+        else {
+            sort(connectV.rbegin(), connectV.rend(), VawCompare);
+            for (const Vaw &v : connectV) {
+                Graph *cloneG = new Graph(*PG);
+                cloneG->insertE(i, std::stoi(v.id_connect), INF);
+                if (cloneG->DFS(0).size() > 1) {
+                    continue;
+                }
+                else {
+                    delete cloneG;
+                    PG->insertE(i ,std::stoi(v.id_connect), INF);
+                }
+            }
+        }
     }
 }
 
@@ -225,67 +303,12 @@ double AnonyTrack(TrajectorySet &TEC, int k, double s,
             if (!tag[i])  //跳过规模小于k的连通分量
                 continue;
             if (PartTG[i].countV() >= k) {
-                if (MinE.size() == 0) {
-                    MinE.clear();
-                    MinE = PartTG[i].getMinE(); //记录最小边
-                }
-                int v1 = PartTG[i].find(MinE[0].id), v2 = PartTG[i].find(MinE[0].id_connect);
-                if (v1 == -1 || v2 == -1) {
-                    //todo to be modify
-                    run[i] = false;
-                    continue;
-                }
-                AnonyC.push_back(PartTG[i].getV(v1));
-                AnonyC.push_back(PartTG[i].getV(v2));
-                std::vector<std::string> drop;
-                while (AnonyC.size() < k) {
-                    for (auto &ac : AnonyC) {
-                        std::vector<std::string> Array_Link =
-                            PartTG[i].linkV(ac.getID(),drop); //todo ccg->cloneTG ?
-                        for (int p = 0; p < Array_Link.size(); ++p) {
-                            if (!same_element(Array_Link[p], AnonyC))
-                                W.push_back({ac.getID(), Array_Link[p], PartTG[i].weight(PartTG[i].find(ac.getID()), PartTG[i].find(Array_Link[p]))});
-                        }
-                    }
-                    //生成一个k-匿名集V
-                    if (W.size() <= 0) {// 无点相关,匿名集规模<k
-                        if (AnonyC.size() <= 2) {
-                            AnonyC.clear();
-                            drop.clear();
-                            MinE.erase(MinE.begin());
-                            v1 = PartTG[i].find(MinE[0].id);
-                            v2 = PartTG[i].find(MinE[0].id_connect);
-                            AnonyC.push_back(PartTG[i].getV(v1));
-                            AnonyC.push_back(PartTG[i].getV(v2));
-                            continue;
-                        }
-                        drop.push_back(AnonyC[AnonyC.size()-1].getID());
-                        AnonyC.pop_back();
-                        W.clear();
-                        continue;
-                    }
-                    sort(W.begin(), W.end(), VawCompare);  //从小到大排序
-                    AnonyC.push_back(PartTG[i].getV(PartTG[i].find(W[0].id_connect)));
-                    if (AnonyC.size() == k){ // 删除检测 是否会导致规模小于<k的连通分量产生？
-                        if (!deleteCheck(k, &AnonyC, &PartTG[i])){
-                            DropW.push_back(findVaw(W, AnonyC[AnonyC.size()-1].getID()));
-                            drop.push_back(AnonyC[AnonyC.size()-1].getID());
-                            AnonyC.pop_back();
-                        } else {
-                            W.clear();
-                            break;
-                        }
-                    }
-                    W.clear();
-                }
-                drop.clear();
-                MinE.erase(MinE.begin());
-                for (auto &ci : AnonyC) {  //在TG删除V的节点及其关联边
+                //deleteCycle(&PartTG[i]);
+                S.push_back(createAnonyV(PartTG[i], k));
+                for (auto &ci : S[S.size()-1]) {  //在TG删除V的节点及其关联边
                     TG.deleteV(ci.getID());
                     PartTG[i].deleteV(ci.getID());
                 }
-                S.push_back(AnonyC);
-                TrajectorySet().swap(AnonyC);
             }
             else {
                 run[i]= false;

@@ -2,7 +2,7 @@
 #include <fstream>
 #include <iomanip>
 #include <sstream>
-#include "en_tra.h"
+#include "Encryption.h"
 #define DATA_LIST "/Volumes/Macintosh HD 2/Documents/Work/new_data/list.txt"
 #define DATA_PATH "/Volumes/Macintosh HD 2/Documents/Work/new_data/new_"
 #define DATA_OUT "/Volumes/Macintosh HD 2/Documents/Trajectory-Privacy/out/"
