@@ -189,10 +189,10 @@ bool deleteCheck(int k, TrajectorySet *V, Graph *G) {
     return true;
 }
 
-std::vector<Vaw> getLinkV(TrajectorySet &V, Graph &G) {
+std::vector<Vaw> getLinkV(TrajectorySet &V, Graph &G, std::vector<std::string> drop) {
     std::vector<Vaw> LinkVaw;
     for (auto &v : V) {
-        std::vector<std::string> linkID = G.linkV(v.getID(), std::vector<std::string>());
+        std::vector<std::string> linkID = G.linkV(v.getID(), drop);
         for (const auto & id : linkID) {
             if (!same_element(id, V))
                 LinkVaw.push_back({v.getID(), id, G.weight(G.find(v.getID()), G.find(id))});
@@ -203,39 +203,42 @@ std::vector<Vaw> getLinkV(TrajectorySet &V, Graph &G) {
 }
 
 TrajectorySet createAnonyV(Graph &PG, int k) {
-    bool token = false;
     std::vector<Vaw> W, MinE;
     TrajectorySet AnonyV;
     MinE = PG.getMinE();
 
     std::vector<std::string> drop;
-    int j = 0;
+
+    int minEid = 0;
 reStart:
-    if (j >= MinE.size()) {
-        std::cout<<"AAA"<<std::endl;
-        return TrajectorySet();
+    if (minEid >= MinE.size()) {
+        //todo do something here
+        int abc =1;
     }
-    AnonyV.push_back(PG.getV(PG.find(MinE[j].id)));
-    AnonyV.push_back(PG.getV(PG.find(MinE[j].id_connect)));
-    int i = 0;
+    int v1 = PG.find(MinE[minEid].id), v2 = PG.find(MinE[minEid].id_connect);
+    TrajectorySet().swap(AnonyV);
+    AnonyV.push_back(PG.getV(v1)), AnonyV.push_back(PG.getV(v2));
     while (AnonyV.size() < k) {
-        W = getLinkV(AnonyV, PG);
-
-        if (i >= W.size()) {
-            j++;
-            AnonyV.clear();
-            goto reStart;
-        }
-
-        AnonyV.push_back(PG.getV(PG.find(W[i].id_connect)));
-        if (!deleteCheck(k, &AnonyV, &PG)) {
+        W = getLinkV(AnonyV, PG, drop);
+        if (W.empty()) {
+            drop.push_back(AnonyV.back().getID());
             AnonyV.pop_back();
-            if (++i >= W.size()) {
-                j++;
-                AnonyV.clear();
+            if (AnonyV.size() < 2) {
+                minEid++;
+                drop.clear();
                 goto reStart;
             }
+            continue;
         }
+        sort(W.begin(), W.end(), VawCompare);
+        AnonyV.push_back(PG.getV(PG.find(W.front().id_connect)));
+        if (AnonyV.size() == k){ // 删除检测 是否会导致规模小于<k的连通分量产生？
+            if (!deleteCheck(k, &AnonyV, &PG)) { //未通过删除检测
+                drop.push_back(AnonyV.back().getID());
+                AnonyV.pop_back();
+            }
+        }
+        std::vector<Vaw>().swap(W);
     }
     return AnonyV;
 }
